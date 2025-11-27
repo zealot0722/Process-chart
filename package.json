@@ -1,20 +1,9 @@
 {
-  "name": "process-chart",
-  "version": "1.0.0",
+  "name": "process-chart-standalone",
+  "version": "1.1.0",
   "private": true,
-  "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview",
-    "bundle": "npm run build && rm -f dist-offline.zip && cd dist && zip -r ../dist-offline.zip ."
-  },
-  "dependencies": {
-    "lucide-react": "^0.475.0",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1"
-  },
-  "devDependencies": {
-    "@vitejs/plugin-react": "^4.3.3",
-    "vite": "^5.4.10"
-  }
+  "description": "Pure HTML/CSS/JS offline SOP tree editor; open index.html directly.",
+  "scripts": {},
+  "keywords": ["offline", "sop", "tree", "html"],
+  "license": "MIT"
 }
