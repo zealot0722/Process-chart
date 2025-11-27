@@ -1,0 +1,8 @@
+registry=https://registry.npmjs.org/
+# 如需 Proxy，填入可用的位址（含帳密時可用 http://user:pass@host:port）
+# https-proxy=http://proxy:8080
+# http-proxy=http://proxy:8080
+# 如使用內部 npm 鏡像，改為對應 registry，例如：
+# registry=https://your.company.registry/
+# 如果需要客製 CA 憑證，取消下一行註解並指向檔案路徑：
+# cafile=${NODE_EXTRA_CA_CERTS}
