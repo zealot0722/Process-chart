@@ -28,6 +28,16 @@
    ```
 3. 同事可以在 GitHub 下載 ZIP，解壓後直接用 `index.html`。不需要額外 build 或安裝。
 
+## 不會用 git 也能在 GitHub 更新檔案（點選上傳即可）
+如果你不熟悉指令，可以直接用 GitHub 網頁版更新 `index.html`：
+1. 先在 GitHub 建立/進入你的倉庫。
+2. 點右上角 **Add file → Upload files**。
+3. 把目前資料夾的 `index.html` 拖曳進上傳區（或按「choose your files」選取）。
+4. 在下方的 *Commit changes* 輸入簡短描述（例如「更新離線 SOP 工具」），不用開分支，直接按 **Commit changes**。
+5. 完成後，頁面會自動顯示新版 `index.html`；同事可點右上角 **Code → Download ZIP** 下載最新版本。
+
+> 若要同時附上你的流程資料，可先在工具裡點「匯出 JSON」，把 JSON 檔和 `index.html` 一起上傳（拖曳兩個檔案即可）。
+
 ## 若要自行客製化程式碼
 - 這個版本為純原生 HTML/CSS/JavaScript，檔案在根目錄的 `index.html`。
 - 你可以直接修改此檔案並重新推送。若要開發便利的套件管理/打包流程，可自行加入 Node/Vite，但預設不需要。
