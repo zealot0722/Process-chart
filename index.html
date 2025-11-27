@@ -272,6 +272,7 @@
       Object.entries(attrs).forEach(([k,v]) => {
         if (k === 'class') el.className = v;
         else if (k === 'text') el.textContent = v;
+        else if (typeof v === 'function' && k.startsWith('on')) el[k] = v;
         else el.setAttribute(k, v);
       });
       [].concat(children).forEach(c => { if (c) el.appendChild(c); });
