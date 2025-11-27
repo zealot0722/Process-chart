@@ -102,6 +102,16 @@ npm run dev -- --host
 - **清除本機暫存**：點擊工具列的「清除本機暫存」會移除 LocalStorage 並重新載入預設流程。
 
 ## 發佈為可攜式（完全離線）套件
+### 一鍵打包（適合非技術同事）
+1. 安裝好 Node.js 18+（包含 npm）。
+2. 在專案根目錄執行：
+   ```bash
+   ./scripts/offline-bundle.sh
+   ```
+   腳本會偵測是否已有 `node_modules`：若沒有會自動 `npm install`，接著執行 `npm run bundle`，最後在根目錄產出 `dist-offline.zip`。
+3. 將 `dist-offline.zip` 傳給同事（或放到 GitHub Release）。同事解壓後直接開啟 `dist/index.html` 即可使用，不需要網路/帳號。
+
+### 手動打包（若想看過程）
 1. `npm install`
 2. 建立靜態產物：
    ```bash
@@ -111,12 +121,12 @@ npm run dev -- --host
    ```bash
    npm run bundle
    ```
-   會在專案根目錄產出 `dist-offline.zip`，同事只要解壓後用瀏覽器開啟 `dist/index.html` 即可（無需網路）。
+   會在專案根目錄產出 `dist-offline.zip`，解壓後用瀏覽器開啟 `dist/index.html` 即可（無需網路）。
 3. 產物會輸出到 `dist/`，內容是純靜態檔案（HTML/CSS/JS）。直接放到 USB、檔案伺服器或任何靜態主機即可運作；資料仍會保存在使用者的瀏覽器 LocalStorage，中途無需帳號與網路。
 
 ## 自行下載/測試
-- **從 GitHub 下載**：在 GitHub 倉庫頁面點擊「Code → Download ZIP」，或在 Release 頁面下載 `dist-offline.zip`（若已用 `npm run bundle` 上傳）。
-- **本機測試步驟**：
+- **最快的下載方式（非技術）**：到 GitHub 倉庫頁面點「Code → Download ZIP」，解壓後直接開啟 `dist/index.html`（若有上傳 `dist-offline.zip`）。如果只下載原始碼壓縮檔，解壓後需先依「一鍵打包」或「手動打包」產出 `dist/` 內容。
+- **本機測試步驟（需 Node.js）**：
   1. `npm install`
   2. `npm run dev -- --host`
   3. 瀏覽器開啟 `http://localhost:4173`
