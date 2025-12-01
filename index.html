@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>驗收站點流程圖</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --border: #cbd5e1;
+      --text: #0f172a;
+      --accent: #2563eb;
+      --muted: #475569;
+    }
+    body {
+      margin: 0;
+      font-family: "Noto Sans TC", "Helvetica Neue", Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+    header {
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 24px;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    main {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+    h1 {
+      margin: 0;
+      font-size: 24px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .tree {
+      display: grid;
+      gap: 12px;
+    }
+    .node {
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--accent);
+      background: var(--card);
+      padding: 12px 14px 12px 18px;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+    }
+    .node .title {
+      font-weight: 700;
+      margin: 0 0 6px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 16px;
+    }
+    .node .type {
+      background: rgba(37, 99, 235, 0.08);
+      color: var(--accent);
+      border-radius: 6px;
+      padding: 2px 8px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .node .desc {
+      margin: 0 0 8px;
+      color: var(--muted);
+      white-space: pre-line;
+      line-height: 1.6;
+    }
+    .notes {
+      margin: 8px 0;
+      padding: 10px 12px;
+      background: #fef9c3;
+      border: 1px solid #f59e0b;
+      border-radius: 8px;
+      color: #92400e;
+      line-height: 1.5;
+    }
+    .children {
+      border-left: 1px dashed var(--border);
+      margin-left: 14px;
+      padding-left: 14px;
+      display: grid;
+      gap: 12px;
+    }
+    details {
+      border: none;
+    }
+    details summary {
+      cursor: pointer;
+      list-style: none;
+      outline: none;
+    }
+    details summary::-webkit-details-marker {
+      display: none;
+    }
+    .summary {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .chevron {
+      width: 10px;
+      height: 10px;
+      border-right: 2px solid var(--muted);
+      border-bottom: 2px solid var(--muted);
+      transform: rotate(45deg);
+      transition: transform 0.2s ease;
+      margin-right: 4px;
+    }
+    details[open] .chevron {
+      transform: rotate(135deg);
+    }
+    .badge {
+      display: inline-block;
+      padding: 2px 6px;
+      font-size: 11px;
+      border-radius: 6px;
+      background: #e2e8f0;
+      color: #0f172a;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>驗收站點流程圖</h1>
+  </header>
+  <main>
+    <div id="tree" class="tree" aria-live="polite"></div>
+  </main>
+  <script>
+    async function loadData() {
+      const container = document.getElementById('tree');
+      container.textContent = '載入中...';
+      try {
+        const res = await fetch('process-chart.json');
+        const data = await res.json();
+        container.textContent = '';
+        container.appendChild(renderNode(data));
+      } catch (err) {
+        container.textContent = '載入流程資料時發生錯誤：' + err.message;
+      }
+    }
+
+    function renderNode(node) {
+      const detailsEl = document.createElement('details');
+      detailsEl.open = node.isOpen ?? true;
+
+      const summary = document.createElement('summary');
+      summary.className = 'summary';
+
+      const chevron = document.createElement('span');
+      chevron.className = 'chevron';
+      summary.appendChild(chevron);
+
+      const type = document.createElement('span');
+      type.className = 'badge';
+      type.textContent = node.type || 'node';
+
+      const title = document.createElement('span');
+      title.textContent = node.title || '未命名節點';
+      title.style.fontWeight = '700';
+
+      summary.appendChild(title);
+      summary.appendChild(type);
+      detailsEl.appendChild(summary);
+
+      const card = document.createElement('div');
+      card.className = 'node';
+
+      const desc = document.createElement('p');
+      desc.className = 'desc';
+      desc.textContent = node.description || '';
+      card.appendChild(desc);
+
+      if (node.notes && node.notes.length) {
+        const notes = document.createElement('div');
+        notes.className = 'notes';
+        notes.innerHTML = node.notes.map(line => escapeHtml(line)).join('<br />');
+        card.appendChild(notes);
+      }
+
+      if (node.imageUrl) {
+        const img = document.createElement('img');
+        img.src = node.imageUrl;
+        img.alt = node.title + ' 圖片';
+        img.style.maxWidth = '100%';
+        img.style.borderRadius = '8px';
+        img.style.marginTop = '8px';
+        card.appendChild(img);
+      }
+
+      if (node.linkUrl) {
+        const link = document.createElement('a');
+        link.href = node.linkUrl;
+        link.textContent = '相關連結';
+        link.target = '_blank';
+        link.rel = 'noreferrer noopener';
+        link.style.display = 'inline-block';
+        link.style.marginTop = '8px';
+        link.style.color = '#2563eb';
+        card.appendChild(link);
+      }
+
+      detailsEl.appendChild(card);
+
+      if (node.children && node.children.length) {
+        const children = document.createElement('div');
+        children.className = 'children';
+        node.children.forEach(child => children.appendChild(renderNode(child)));
+        detailsEl.appendChild(children);
+      }
+
+      return detailsEl;
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/\"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    loadData();
+  </script>
+</body>
+</html>
