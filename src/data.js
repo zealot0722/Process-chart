@@ -1,4 +1,4 @@
-export const processData = {
+window.processData = {
   id: "root",
   title: "驗收站點 (RCV)",
   description:
@@ -7,7 +7,7 @@ export const processData = {
     "驗收量需大於碼頭的卸貨量，否則會造成碼頭塞車。\n若有多餘人力，需要觀察上架的待上架商品暫存區是否有足夠的貨物可上架，並與上架 Captain 確認是否需要補貨。",
   type: "role",
   isOpen: true,
-  layout: "stack",
+  layout: "vertical",
   style: {
     bgColor: "bg-slate-50",
     borderColor: "border-slate-800",
@@ -25,7 +25,7 @@ export const processData = {
         "商品品名、外觀、規格是否與系統一致？\n商品是否需要效期、及效期是否超過系統顯示？\n商品最小包裝單位為何？\n外部包裝是否與內部包裝一致？\n若有任何問題則務必通知 PS。",
       type: "process",
       isOpen: true,
-      layout: "split",
+      layout: "vertical",
       style: {
         bgColor: "bg-white",
         borderColor: "border-blue-500",
@@ -40,7 +40,7 @@ export const processData = {
           description: "按下綠色按鈕啟動輸送帶，讓貨到達工作台。",
           type: "step",
           isOpen: false,
-          layout: "stack",
+          layout: "vertical",
           style: {
             bgColor: "bg-white",
             borderColor: "border-slate-200",
@@ -56,7 +56,7 @@ export const processData = {
           description: "打開 worker tool，選擇「入庫」功能。",
           type: "step",
           isOpen: false,
-          layout: "stack",
+          layout: "vertical",
           style: {
             bgColor: "bg-white",
             borderColor: "border-slate-200",
@@ -72,7 +72,7 @@ export const processData = {
           description: "依序刷以下條碼：\n1. 工作台條碼\n2. IBC 條碼（麥頭上）\n3. 商品條碼",
           type: "step",
           isOpen: false,
-          layout: "stack",
+          layout: "vertical",
           style: {
             bgColor: "bg-white",
             borderColor: "border-slate-200",
@@ -89,7 +89,7 @@ export const processData = {
           notes: "⚠️ 效期需大於系統顯示日期，若小於請報警示。",
           type: "step",
           isOpen: false,
-          layout: "split",
+          layout: "vertical",
           style: {
             bgColor: "bg-white",
             borderColor: "border-slate-200",
@@ -106,7 +106,7 @@ export const processData = {
           notes: "⚠️ 注意不要超過限高線，以免造成後續自動倉儲卡貨。",
           type: "step",
           isOpen: false,
-          layout: "split",
+          layout: "vertical",
           style: {
             bgColor: "bg-white",
             borderColor: "border-slate-200",
@@ -123,7 +123,7 @@ export const processData = {
             "在系統輸入數量，選擇要送去的倉庫位置（一樓或二樓）。\n部分商品會自動分配儲位，其他需手動選取。",
           type: "step",
           isOpen: false,
-          layout: "stack",
+          layout: "vertical",
           style: {
             bgColor: "bg-white",
             borderColor: "border-slate-200",
@@ -139,7 +139,7 @@ export const processData = {
           description: "掃物流箱條碼，確認入庫完成。",
           type: "step",
           isOpen: false,
-          layout: "stack",
+          layout: "vertical",
           style: {
             bgColor: "bg-white",
             borderColor: "border-slate-200",
@@ -155,7 +155,7 @@ export const processData = {
           description: "開啟物流箱條碼查驗資料，若正確，點選「入庫」。",
           type: "step",
           isOpen: false,
-          layout: "stack",
+          layout: "vertical",
           style: {
             bgColor: "bg-white",
             borderColor: "border-slate-200",
@@ -171,7 +171,7 @@ export const processData = {
           description: "將物流箱推入下方輸送帶，完成本次散驗。",
           type: "step",
           isOpen: false,
-          layout: "stack",
+          layout: "vertical",
           style: {
             bgColor: "bg-white",
             borderColor: "border-slate-200",
@@ -191,7 +191,7 @@ export const processData = {
         "【關鍵績效指標 KPI】\n• Each: HTP 300\n• Pallet: HTP 1800\n\n【一般規範】\n• 板驗人員標示請用「白色膠帶」。\n• 驗效期以「抽查四角與中間」方式進行，以防過期混貨。\n• 食品、母嬰、洗浴等與人體接觸商品，「禁止於效期處貼標」或塗改。\n\n【重量限制】\n• 一般板：800kg\n• 液體類：可至 1000kg (但轉出不得超過 800kg)",
       type: "process",
       isOpen: true,
-      layout: "notes-wide",
+      layout: "vertical",
       style: {
         bgColor: "bg-white",
         borderColor: "border-purple-500",
@@ -206,7 +206,7 @@ export const processData = {
           description: "所有板驗貨物皆須執行的標準系統操作步驟。",
           type: "process",
           isOpen: true,
-          layout: "split",
+          layout: "vertical",
           style: {
             bgColor: "bg-purple-50",
             borderColor: "border-purple-300",
@@ -221,7 +221,7 @@ export const processData = {
               description: "開啟 WMS 系統驗收功能。",
               type: "step",
               isOpen: false,
-              layout: "stack",
+              layout: "vertical",
               style: {
                 bgColor: "bg-white",
                 borderColor: "border-slate-200",
@@ -237,7 +237,7 @@ export const processData = {
               description: "刷入工作檯分類條碼。",
               type: "step",
               isOpen: false,
-              layout: "stack",
+              layout: "vertical",
               style: {
                 bgColor: "bg-white",
                 borderColor: "border-slate-200",
@@ -253,7 +253,7 @@ export const processData = {
               description: "刷入待驗 IBC 條碼。",
               type: "step",
               isOpen: false,
-              layout: "stack",
+              layout: "vertical",
               style: {
                 bgColor: "bg-white",
                 borderColor: "border-slate-200",
@@ -270,7 +270,7 @@ export const processData = {
               notes: "⚠️ 轉出貨優先處理！若到貨量少於應轉出量，則全數設為移轉貨。",
               type: "step",
               isOpen: false,
-              layout: "split",
+              layout: "vertical",
               style: {
                 bgColor: "bg-white",
                 borderColor: "border-slate-200",
@@ -287,7 +287,7 @@ export const processData = {
               notes: "務必檢查四角與中間貨物，防止混入過期品。",
               type: "step",
               isOpen: false,
-              layout: "split",
+              layout: "vertical",
               style: {
                 bgColor: "bg-white",
                 borderColor: "border-slate-200",
@@ -303,7 +303,7 @@ export const processData = {
               description: "於系統輸入實際驗收數量。",
               type: "step",
               isOpen: false,
-              layout: "stack",
+              layout: "vertical",
               style: {
                 bgColor: "bg-white",
                 borderColor: "border-slate-200",
@@ -321,7 +321,7 @@ export const processData = {
                 "⚠️ 同一棧板若部分需移轉，應「優先處理移轉貨」。\nGCGP 填滿後再進行 RCRT，兩者標籤可共用一板。",
               type: "step",
               isOpen: true,
-              layout: "notes-wide",
+              layout: "vertical",
               style: {
                 bgColor: "bg-amber-50",
                 borderColor: "border-amber-500",
@@ -338,7 +338,7 @@ export const processData = {
                   notes: "【RCRT 規範】\n• 一個標示對應一種貨物。",
                   type: "step",
                   isOpen: true,
-                  layout: "stack",
+                  layout: "vertical",
                   style: {
                     bgColor: "bg-emerald-50",
                     borderColor: "border-emerald-500",
@@ -357,7 +357,7 @@ export const processData = {
                     "【GCGP 規範】\n• 每棧板最多五種貨物。\n• 標籤必須對應實際貨物並寫上數量。\n• 同一棧板 GCGP 貨物須為「相同轉出位置」，不同位置需分板。",
                   type: "step",
                   isOpen: true,
-                  layout: "stack",
+                  layout: "vertical",
                   style: {
                     bgColor: "bg-rose-50",
                     borderColor: "border-rose-500",
@@ -375,7 +375,7 @@ export const processData = {
               description: "刷入對應條碼，並點選物流箱號碼確認。",
               type: "step",
               isOpen: false,
-              layout: "stack",
+              layout: "vertical",
               style: {
                 bgColor: "bg-white",
                 borderColor: "border-slate-200",
@@ -391,7 +391,7 @@ export const processData = {
               description: "點選「入庫」完成系統驗收作業。",
               type: "step",
               isOpen: false,
-              layout: "stack",
+              layout: "vertical",
               style: {
                 bgColor: "bg-white",
                 borderColor: "border-slate-200",
@@ -411,7 +411,7 @@ export const processData = {
       description: "請填寫說明...",
       type: "step",
       isOpen: true,
-      layout: "stack",
+      layout: "vertical",
       style: {
         bgColor: "bg-white",
         borderColor: "border-slate-200",
@@ -424,8 +424,6 @@ export const processData = {
   ],
 };
 
-export const layoutOptions = [
-  { value: "stack", label: "單欄 (直向)" },
-  { value: "split", label: "雙欄 (左右)" },
-  { value: "notes-wide", label: "重點備註加寬" },
+window.layoutOptions = [
+  { value: "vertical", label: "標題 / 說明 / 注意事項 (直向)" },
 ];

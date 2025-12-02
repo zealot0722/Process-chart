@@ -1,4 +1,4 @@
-import { layoutOptions, processData } from "./data.js";
+const { layoutOptions, processData } = window;
 
 const app = document.querySelector("#app");
 const nodeTemplate = document.querySelector("#node-template");
@@ -13,7 +13,7 @@ function cloneDeep(node) {
 }
 
 function applyLayoutDefaults(node) {
-  if (!node.layout) node.layout = "stack";
+  if (!node.layout) node.layout = "vertical";
   node.children?.forEach(applyLayoutDefaults);
 }
 
@@ -55,8 +55,8 @@ function renderForm(node, onSubmit, onCancel) {
   const titleField = createInputField("標題", "title", node.title, "text");
   const typeField = createInputField("類型", "type", node.type || "", "text");
   const layoutField = createLayoutField(node.layout);
-  const descField = createTextAreaField("說明 / 描述", "description", node.description || "");
-  const notesField = createTextAreaField("備註", "notes", node.notes || "");
+  const descField = createTextAreaField("說明", "description", node.description || "");
+  const notesField = createTextAreaField("注意事項", "notes", node.notes || "");
 
   grid.append(titleField, typeField, layoutField, descField, notesField);
 
@@ -154,8 +154,10 @@ function renderNode(node, container) {
   badgeRow.append(createBadge(layoutLabels[node.layout] || "自訂版面"));
   content.append(badgeRow);
 
-  const descriptionField = createField("描述", node.description);
-  const notesField = createField("備註", node.notes, "notes");
+  const titleField = createField("標題", node.title, "field--stacked");
+  const descriptionField = createField("說明", node.description);
+  const notesField = createField("注意事項", node.notes, "notes");
+  if (titleField) content.append(titleField);
   if (descriptionField) content.append(descriptionField);
   if (notesField) content.append(notesField);
 
