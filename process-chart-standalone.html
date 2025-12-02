@@ -1,0 +1,1219 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Process Chart</title>
+    <style>
+:root {
+  color-scheme: light;
+  font-family: "Inter", "Noto Sans TC", system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
+  background: #f8fafc;
+  color: #0f172a;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: #eef2f7;
+}
+
+.app-shell {
+  min-height: 100vh;
+}
+
+.app-header {
+  padding: 1.5rem 2rem;
+  background: linear-gradient(120deg, #1d4ed8, #2563eb, #60a5fa);
+  color: #fff;
+  border-bottom: 4px solid #1e3a8a;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+}
+
+.branding {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.brand-icon {
+  font-size: 1.5rem;
+}
+
+.subtitle {
+  margin: 0;
+  opacity: 0.9;
+}
+
+.app {
+  padding: 1.5rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.node {
+  --accent: #cbd5e1;
+  --indent: 0px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-left: 8px solid var(--accent);
+  border-radius: 12px;
+  padding: 1rem 1.25rem 1.1rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+  position: relative;
+  margin-left: var(--indent);
+}
+
+.node__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+  flex-wrap: wrap;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px dashed #e2e8f0;
+}
+
+.node__titles h2 {
+  margin: 0;
+  font-size: 1.2rem;
+  color: #0f172a;
+  padding: 0.2rem 0.4rem;
+  border-radius: 8px;
+  transition: background 0.15s ease;
+}
+
+.node__titles p {
+  margin: 0.15rem 0 0;
+  color: #475569;
+  font-weight: 600;
+  padding: 0.15rem 0.35rem;
+  border-radius: 6px;
+}
+
+.node__titles h2[contenteditable="true"],
+.node__titles p[contenteditable="true"] {
+  outline: none;
+  border: 1px dashed transparent;
+}
+
+.node__titles h2[contenteditable="true"]:focus,
+.node__titles p[contenteditable="true"]:focus {
+  background: #e0f2fe;
+  border-color: #38bdf8;
+}
+
+.node[data-depth="0"] {
+  background: #f8fafc;
+}
+
+.node::before {
+  content: "";
+  position: absolute;
+  left: -14px;
+  top: 0.85rem;
+  bottom: 0.85rem;
+  width: 2px;
+  background: linear-gradient(#e2e8f0, #e2e8f0);
+  opacity: 0.85;
+}
+
+.node[data-depth="0"]::before {
+  display: none;
+}
+
+.node__actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.node__content {
+  margin: 0.8rem 0 0.25rem;
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: 1fr;
+}
+
+.node__children {
+  margin-top: 0.75rem;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.field {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 0.8rem;
+}
+
+.field__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.field__label {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #0f172a;
+  display: flex;
+  gap: 0.35rem;
+  align-items: center;
+}
+
+.field__hint {
+  color: #94a3b8;
+  font-size: 0.85rem;
+}
+
+.field__value {
+  margin: 0;
+  white-space: pre-line;
+  color: #0f172a;
+  line-height: 1.55;
+}
+
+.field--editable {
+  border-style: dashed;
+}
+
+.field--link {
+  background: #eef2ff;
+  border-color: #cbd5ff;
+}
+
+.notes {
+  background: #fdf2f8;
+  border-color: #f9a8d4;
+}
+
+.button {
+  border: 1px solid transparent;
+  border-radius: 10px;
+  padding: 0.45rem 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.2s;
+}
+
+.button:active {
+  transform: translateY(1px);
+}
+
+.button--primary {
+  background: #2563eb;
+  color: #fff;
+  border-color: #1d4ed8;
+  box-shadow: 0 8px 16px rgba(37, 99, 235, 0.25);
+}
+
+.button--danger {
+  background: #fee2e2;
+  color: #b91c1c;
+  border-color: #ef4444;
+  box-shadow: 0 8px 16px rgba(239, 68, 68, 0.2);
+}
+
+.button--ghost {
+  background: #e2e8f0;
+  color: #0f172a;
+  border-color: #cbd5e1;
+}
+
+.button--secondary {
+  background: #f8fafc;
+  color: #0f172a;
+  border-color: #cbd5e1;
+}
+
+.inline-input,
+.inline-select,
+textarea.inline-input {
+  width: 100%;
+  padding: 0.55rem 0.65rem;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  color: #0f172a;
+  font-size: 0.95rem;
+  font-family: inherit;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.inline-input:focus,
+.inline-select:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+textarea.inline-input {
+  min-height: 88px;
+  resize: vertical;
+}
+
+.layout-vertical .node__content {
+  grid-template-columns: 1fr;
+}
+
+.helper-text {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #94a3b8;
+}
+
+.layout-picker {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 0.75rem;
+  background: #fff;
+}
+
+.layout-picker legend {
+  font-weight: 800;
+  padding: 0 0.35rem;
+}
+
+.layout-picker__hint {
+  margin: 0.15rem 0 0.6rem;
+  font-size: 0.9rem;
+  color: #475569;
+}
+
+.layout-picker__list {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.layout-option__preview {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.35rem;
+  margin-top: 0.35rem;
+}
+
+.preview-side-notes {
+  grid-template-columns: 1.15fr 0.85fr;
+}
+
+.layout-option__preview span {
+  display: block;
+  padding: 0.35rem 0.45rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.preview__desc {
+  background: #1d4ed8;
+  color: #e0e7ff;
+}
+
+.preview__note {
+  background: #c026d3;
+  color: #f8e8ff;
+}
+
+.layout-option {
+  display: flex;
+  gap: 0.65rem;
+  align-items: flex-start;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  padding: 0.65rem 0.75rem;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.layout-option:hover {
+  border-color: #2563eb;
+  background: #eff6ff;
+}
+
+.layout-option input {
+  width: 1.1rem;
+  height: 1.1rem;
+  margin-top: 0.2rem;
+}
+
+.layout-option__title {
+  font-weight: 800;
+}
+
+.layout-option__desc {
+  color: #475569;
+  margin-top: 0.1rem;
+}
+
+.field-group {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.fields-vertical {
+  grid-template-columns: 1fr;
+}
+
+.fields-side-notes {
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.85fr);
+}
+
+.meta-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 0.65rem;
+}
+
+.icon-button {
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  color: #0f172a;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 800;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+
+.icon-button:hover {
+  background: #eff6ff;
+  border-color: #2563eb;
+}
+
+.icon-button--remove {
+  background: #fef2f2;
+  border-color: #fecdd3;
+  color: #b91c1c;
+}
+
+.icon-button--remove:hover {
+  background: #fee2e2;
+  border-color: #fca5a5;
+}
+
+.field-list {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.field-list__item {
+  display: grid;
+  gap: 0.4rem;
+  grid-template-columns: 1fr auto;
+  align-items: start;
+  padding: 0.6rem 0.55rem;
+  border: 1px dashed #e2e8f0;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.field-list__controls {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.media-preview {
+  grid-column: 1 / -1;
+  margin-top: 0.15rem;
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: 10px;
+  padding: 0.5rem;
+}
+
+.media-preview img {
+  max-width: 100%;
+  display: block;
+  border-radius: 8px;
+}
+
+.link-preview {
+  grid-column: 1 / -1;
+  color: #2563eb;
+  word-break: break-all;
+  text-decoration: none;
+  font-weight: 700;
+}
+
+.link-preview:hover {
+  text-decoration: underline;
+}
+    </style>
+  </head>
+  <body class="app-shell">
+    <header class="app-header">
+      <div class="branding">
+        <span class="brand-icon">📦</span>
+        <h1>Process Chart Editor</h1>
+      </div>
+      <p class="subtitle">支援多欄位版面配置與換行顯示的流程維護工具</p>
+    </header>
+    <main id="app" class="app"></main>
+    <template id="node-template">
+      <section class="node">
+        <div class="node__header">
+          <div class="node__titles">
+            <h2 class="node__title"></h2>
+            <p class="node__type"></p>
+          </div>
+          <div class="node__actions">
+            <button class="button button--ghost" data-action="toggle"></button>
+            <button class="button button--danger" data-action="delete">刪除</button>
+          </div>
+        </div>
+        <div class="node__content"></div>
+        <div class="node__children"></div>
+      </section>
+    </template>
+    <script>
+window.processData = {
+  id: "root",
+  title: "驗收站點 (RCV)",
+  description:
+    "主要處理的貨物稱為 NYR (Not Yet Receive)。\n作業分為板驗及散驗，需依商品的大小及數量去區分應使用的驗收方式。\n需要觀察當天預計到倉量、碼頭的卸貨量、未卸板數、各板貨態、移倉數量等等來決定散驗及板驗人力的配置。",
+  notes:
+    "驗收量需大於碼頭的卸貨量，否則會造成碼頭塞車。\n若有多餘人力，需要觀察上架的待上架商品暫存區是否有足夠的貨物可上架，並與上架 Captain 確認是否需要補貨。",
+  images: ["https://dummyimage.com/800x240/1d4ed8/ffffff&text=RCV+流程概覽"],
+  links: ["https://example.com/rcv-overview"],
+  type: "role",
+  isOpen: true,
+  layout: "vertical",
+  style: {
+    bgColor: "bg-slate-50",
+    borderColor: "border-slate-800",
+    fontFamily: "font-sans",
+    titleSize: "text-2xl",
+    contentSize: "text-base",
+  },
+  children: [
+    {
+      id: "process",
+      title: "1.1 散驗作業流程 (Process)",
+      description:
+        "驗收員會在輸送帶旁的工作台進行商品驗收與決定入庫位置。\n可裝入物流箱的為散貨，無法裝入箱或太大者為板貨。",
+      notes:
+        "商品品名、外觀、規格是否與系統一致？\n商品是否需要效期、及效期是否超過系統顯示？\n商品最小包裝單位為何？\n外部包裝是否與內部包裝一致？\n若有任何問題則務必通知 PS。",
+      type: "process",
+      isOpen: true,
+      layout: "vertical",
+      style: {
+        bgColor: "bg-white",
+        borderColor: "border-blue-500",
+        fontFamily: "font-sans",
+        titleSize: "text-xl",
+        contentSize: "text-base",
+      },
+      children: [
+        {
+          id: "step1",
+          title: "步驟 1：啟動輸送帶",
+          description: "按下綠色按鈕啟動輸送帶，讓貨到達工作台。",
+          type: "step",
+          isOpen: false,
+          layout: "vertical",
+          style: {
+            bgColor: "bg-white",
+            borderColor: "border-slate-200",
+            fontFamily: "font-sans",
+            titleSize: "text-lg",
+            contentSize: "text-base",
+          },
+          children: [],
+        },
+        {
+          id: "step2",
+          title: "步驟 2：開啟系統",
+          description: "打開 worker tool，選擇「入庫」功能。",
+          type: "step",
+          isOpen: false,
+          layout: "vertical",
+          style: {
+            bgColor: "bg-white",
+            borderColor: "border-slate-200",
+            fontFamily: "font-sans",
+            titleSize: "text-lg",
+            contentSize: "text-base",
+          },
+          children: [],
+        },
+        {
+          id: "step3",
+          title: "步驟 3：刷讀條碼",
+          description: "依序刷以下條碼：\n1. 工作台條碼\n2. IBC 條碼（麥頭上）\n3. 商品條碼",
+          type: "step",
+          isOpen: false,
+          layout: "vertical",
+          style: {
+            bgColor: "bg-white",
+            borderColor: "border-slate-200",
+            fontFamily: "font-sans",
+            titleSize: "text-lg",
+            contentSize: "text-base",
+          },
+          children: [],
+        },
+        {
+          id: "step4",
+          title: "步驟 4：商品檢核",
+          description: "檢查外觀、品名、圖片、效期等是否與系統相符。",
+          notes: "⚠️ 效期需大於系統顯示日期，若小於請報警示。",
+          type: "step",
+          isOpen: false,
+          layout: "vertical",
+          style: {
+            bgColor: "bg-white",
+            borderColor: "border-slate-200",
+            fontFamily: "font-sans",
+            titleSize: "text-lg",
+            contentSize: "text-base",
+          },
+          children: [],
+        },
+        {
+          id: "step5",
+          title: "步驟 5：裝箱",
+          description: "驗收完成後，將商品放入物流箱內。",
+          notes: "⚠️ 注意不要超過限高線，以免造成後續自動倉儲卡貨。",
+          type: "step",
+          isOpen: false,
+          layout: "vertical",
+          style: {
+            bgColor: "bg-white",
+            borderColor: "border-slate-200",
+            fontFamily: "font-sans",
+            titleSize: "text-lg",
+            contentSize: "text-base",
+          },
+          children: [],
+        },
+        {
+          id: "step6",
+          title: "步驟 6：輸入數量與儲位",
+          description:
+            "在系統輸入數量，選擇要送去的倉庫位置（一樓或二樓）。\n部分商品會自動分配儲位，其他需手動選取。",
+          type: "step",
+          isOpen: false,
+          layout: "vertical",
+          style: {
+            bgColor: "bg-white",
+            borderColor: "border-slate-200",
+            fontFamily: "font-sans",
+            titleSize: "text-lg",
+            contentSize: "text-base",
+          },
+          children: [],
+        },
+        {
+          id: "step7",
+          title: "步驟 7：確認入庫",
+          description: "掃物流箱條碼，確認入庫完成。",
+          type: "step",
+          isOpen: false,
+          layout: "vertical",
+          style: {
+            bgColor: "bg-white",
+            borderColor: "border-slate-200",
+            fontFamily: "font-sans",
+            titleSize: "text-lg",
+            contentSize: "text-base",
+          },
+          children: [],
+        },
+        {
+          id: "step8",
+          title: "步驟 8：資料查驗",
+          description: "開啟物流箱條碼查驗資料，若正確，點選「入庫」。",
+          type: "step",
+          isOpen: false,
+          layout: "vertical",
+          style: {
+            bgColor: "bg-white",
+            borderColor: "border-slate-200",
+            fontFamily: "font-sans",
+            titleSize: "text-lg",
+            contentSize: "text-base",
+          },
+          children: [],
+        },
+        {
+          id: "step9",
+          title: "步驟 9：完成作業",
+          description: "將物流箱推入下方輸送帶，完成本次散驗。",
+          type: "step",
+          isOpen: false,
+          layout: "vertical",
+          style: {
+            bgColor: "bg-white",
+            borderColor: "border-slate-200",
+            fontFamily: "font-sans",
+            titleSize: "text-lg",
+            contentSize: "text-base",
+          },
+          children: [],
+        },
+      ],
+    },
+    {
+      id: "node-pallet-root",
+      title: "1.2 板驗作業 (Pallet Receiving)",
+      description: "負責棧板貨物的驗收、分類與入庫作業。\n區分為廠內用 (RCRT) 與轉出專用 (GCGP/GCGT)。",
+      notes:
+        "【關鍵績效指標 KPI】\n• Each: HTP 300\n• Pallet: HTP 1800\n\n【一般規範】\n• 板驗人員標示請用「白色膠帶」。\n• 驗效期以「抽查四角與中間」方式進行，以防過期混貨。\n• 食品、母嬰、洗浴等與人體接觸商品，「禁止於效期處貼標」或塗改。\n\n【重量限制】\n• 一般板：800kg\n• 液體類：可至 1000kg (但轉出不得超過 800kg)",
+      links: ["https://example.com/pallet-guide"],
+      type: "process",
+      isOpen: true,
+      layout: "vertical",
+      style: {
+        bgColor: "bg-white",
+        borderColor: "border-purple-500",
+        fontFamily: "font-sans",
+        titleSize: "text-xl",
+        contentSize: "text-base",
+      },
+      children: [
+        {
+          id: "pallet-common-process",
+          title: "1.2.1 板驗作業流程",
+          description: "所有板驗貨物皆須執行的標準系統操作步驟。",
+          type: "process",
+          isOpen: true,
+          layout: "vertical",
+          style: {
+            bgColor: "bg-purple-50",
+            borderColor: "border-purple-300",
+            fontFamily: "font-sans",
+            titleSize: "text-lg",
+            contentSize: "text-base",
+          },
+          children: [
+            {
+              id: "p-step1",
+              title: "① 開啟系統",
+              description: "開啟 WMS 系統驗收功能。",
+              type: "step",
+              isOpen: false,
+              layout: "vertical",
+              style: {
+                bgColor: "bg-white",
+                borderColor: "border-slate-200",
+                fontFamily: "font-sans",
+                titleSize: "text-lg",
+                contentSize: "text-base",
+              },
+              children: [],
+            },
+            {
+              id: "p-step2",
+              title: "② 刷入工作檯",
+              description: "刷入工作檯分類條碼。",
+              type: "step",
+              isOpen: false,
+              layout: "vertical",
+              style: {
+                bgColor: "bg-white",
+                borderColor: "border-slate-200",
+                fontFamily: "font-sans",
+                titleSize: "text-lg",
+                contentSize: "text-base",
+              },
+              children: [],
+            },
+            {
+              id: "p-step3",
+              title: "③ 刷入 IBC",
+              description: "刷入待驗 IBC 條碼。",
+              type: "step",
+              isOpen: false,
+              layout: "vertical",
+              style: {
+                bgColor: "bg-white",
+                borderColor: "border-slate-200",
+                fontFamily: "font-sans",
+                titleSize: "text-lg",
+                contentSize: "text-base",
+              },
+              children: [],
+            },
+            {
+              id: "p-step4",
+              title: "④ 查詢屬性",
+              description: "查詢是否為移轉貨物 (Cross Dock)。",
+              notes: "⚠️ 轉出貨優先處理！若到貨量少於應轉出量，則全數設為移轉貨。",
+              type: "step",
+              isOpen: false,
+              layout: "vertical",
+              style: {
+                bgColor: "bg-white",
+                borderColor: "border-slate-200",
+                fontFamily: "font-sans",
+                titleSize: "text-lg",
+                contentSize: "text-base",
+              },
+              children: [],
+            },
+            {
+              id: "p-step5",
+              title: "⑤ 盤點",
+              description: "盤點貨物數量與效期。",
+              notes: "務必檢查四角與中間貨物，防止混入過期品。",
+              type: "step",
+              isOpen: false,
+              layout: "vertical",
+              style: {
+                bgColor: "bg-white",
+                borderColor: "border-slate-200",
+                fontFamily: "font-sans",
+                titleSize: "text-lg",
+                contentSize: "text-base",
+              },
+              children: [],
+            },
+            {
+              id: "p-step6",
+              title: "⑥ 輸入數量",
+              description: "於系統輸入實際驗收數量。",
+              type: "step",
+              isOpen: false,
+              layout: "vertical",
+              style: {
+                bgColor: "bg-white",
+                borderColor: "border-slate-200",
+                fontFamily: "font-sans",
+                titleSize: "text-lg",
+                contentSize: "text-base",
+              },
+              children: [],
+            },
+            {
+              id: "p-step7",
+              title: "⑦ 選擇物流箱分類",
+              description: "選擇物流箱分類：\n• RCRT：廠內用\n• GCGP：轉出專用",
+              notes:
+                "⚠️ 同一棧板若部分需移轉，應「優先處理移轉貨」。\nGCGP 填滿後再進行 RCRT，兩者標籤可共用一板。",
+              type: "step",
+              isOpen: true,
+              layout: "vertical",
+              style: {
+                bgColor: "bg-amber-50",
+                borderColor: "border-amber-500",
+                fontFamily: "font-sans",
+                titleSize: "text-lg",
+                contentSize: "text-base",
+              },
+              children: [
+                {
+                  id: "proc_rcrt",
+                  title: "若為 RCRT (廠內用)",
+                  description:
+                    "⑩ 於標示上寫預計轉出位置與碼頭號。\n⑪ 貼至棧板側邊並換上對應日高角錐。\n⑫ 完成入庫。",
+                  notes: "【RCRT 規範】\n• 一個標示對應一種貨物。",
+                  type: "step",
+                  isOpen: true,
+                  layout: "vertical",
+                  style: {
+                    bgColor: "bg-emerald-50",
+                    borderColor: "border-emerald-500",
+                    fontFamily: "font-sans",
+                    titleSize: "text-base",
+                    contentSize: "text-sm",
+                  },
+                  children: [],
+                },
+                {
+                  id: "proc_gcgp",
+                  title: "若為 GCGP (轉出專用)",
+                  description:
+                    "⑩ 於 Cross Dock 工作表輸入實際驗收數量、移轉數量、板數。\n⑪ 於標籤上寫上數量，並貼上 GCGP 標籤至棧板側邊。\n⑫ 換上對應日的高角錐，並套上「紅白相間扁角錐」。",
+                  notes:
+                    "【GCGP 規範】\n• 每棧板最多五種貨物。\n• 標籤必須對應實際貨物並寫上數量。\n• 同一棧板 GCGP 貨物須為「相同轉出位置」，不同位置需分板。",
+                  type: "step",
+                  isOpen: true,
+                  layout: "vertical",
+                  style: {
+                    bgColor: "bg-rose-50",
+                    borderColor: "border-rose-500",
+                    fontFamily: "font-sans",
+                    titleSize: "text-base",
+                    contentSize: "text-sm",
+                  },
+                  children: [],
+                },
+              ],
+            },
+            {
+              id: "p-step8",
+              title: "⑧ 確認物流箱",
+              description: "刷入對應條碼，並點選物流箱號碼確認。",
+              type: "step",
+              isOpen: false,
+              layout: "vertical",
+              style: {
+                bgColor: "bg-white",
+                borderColor: "border-slate-200",
+                fontFamily: "font-sans",
+                titleSize: "text-lg",
+                contentSize: "text-base",
+              },
+              children: [],
+            },
+            {
+              id: "p-step9",
+              title: "⑨ 完成驗收",
+              description: "點選「入庫」完成系統驗收作業。",
+              type: "step",
+              isOpen: false,
+              layout: "vertical",
+              style: {
+                bgColor: "bg-white",
+                borderColor: "border-slate-200",
+                fontFamily: "font-sans",
+                titleSize: "text-lg",
+                contentSize: "text-base",
+              },
+              children: [],
+            },
+          ],
+        },
+      ],
+    },
+    {
+      id: "node-h99txb4",
+      title: "新子區塊",
+      description: "請填寫說明...",
+      type: "step",
+      isOpen: true,
+      layout: "vertical",
+      style: {
+        bgColor: "bg-white",
+        borderColor: "border-slate-200",
+        fontFamily: "font-sans",
+        titleSize: "text-lg",
+        contentSize: "text-base",
+      },
+      children: [],
+    },
+  ],
+};
+
+window.layoutOptions = [
+  {
+    value: "vertical",
+    label: "單欄排列",
+    description: "說明在上、注意事項在下，保持條列分明。",
+  },
+  {
+    value: "side-notes",
+    label: "左右分欄",
+    description: "說明在左、注意事項在右，便於對照重點。",
+  },
+];
+    </script>
+    <script>
+const { layoutOptions, processData } = window;
+
+const app = document.querySelector("#app");
+const nodeTemplate = document.querySelector("#node-template");
+
+const accentPalette = ["#2563eb", "#0ea5e9", "#22c55e", "#a855f7", "#f97316", "#ec4899"];
+
+function cloneDeep(node) {
+  return JSON.parse(JSON.stringify(node));
+}
+
+function applyLayoutDefaults(node) {
+  if (!node.layout) node.layout = "vertical";
+  if (!node.images) node.images = [];
+  if (!node.links) node.links = [];
+  node.children?.forEach(applyLayoutDefaults);
+}
+
+function getAccent(depth) {
+  return accentPalette[depth % accentPalette.length];
+}
+
+function createEditableText(label, value, onChange, options = {}) {
+  const { multiline = false, placeholder = "" } = options;
+  const wrapper = document.createElement("div");
+  wrapper.className = "field field--editable";
+
+  const header = document.createElement("div");
+  header.className = "field__header";
+  const lbl = document.createElement("div");
+  lbl.className = "field__label";
+  lbl.textContent = label;
+  const hint = document.createElement("span");
+  hint.className = "field__hint";
+  hint.textContent = "可直接編輯";
+  header.append(lbl, hint);
+
+  const inputEl = multiline ? document.createElement("textarea") : document.createElement("input");
+  inputEl.value = value || "";
+  inputEl.placeholder = placeholder;
+  inputEl.className = "inline-input";
+  if (multiline) {
+    inputEl.rows = 3;
+  }
+
+  inputEl.addEventListener("input", (event) => {
+    onChange(event.target.value);
+  });
+
+  wrapper.append(header, inputEl);
+  return wrapper;
+}
+
+function createLayoutSelector(node) {
+  const wrapper = document.createElement("div");
+  wrapper.className = "field field--layout";
+
+  const header = document.createElement("div");
+  header.className = "field__header";
+  const label = document.createElement("div");
+  label.className = "field__label";
+  label.textContent = "欄位版面配置";
+  header.append(label);
+
+  const select = document.createElement("select");
+  select.className = "inline-select";
+
+  layoutOptions.forEach((option) => {
+    const opt = document.createElement("option");
+    opt.value = option.value;
+    opt.textContent = `${option.label} — ${option.description}`;
+    if (node.layout === option.value) opt.selected = true;
+    select.append(opt);
+  });
+
+  select.addEventListener("change", (event) => {
+    node.layout = event.target.value;
+    render();
+  });
+
+  wrapper.append(header, select);
+  return wrapper;
+}
+
+function createListField(label, items, onAdd, onUpdate, onRemove, options = {}) {
+  const { type = "link" } = options;
+  const wrapper = document.createElement("div");
+  wrapper.className = `field field--editable field--list field--${type}`;
+
+  const header = document.createElement("div");
+  header.className = "field__header";
+  const lbl = document.createElement("div");
+  lbl.className = "field__label";
+  lbl.textContent = label;
+
+  const addBtn = document.createElement("button");
+  addBtn.type = "button";
+  addBtn.className = "icon-button icon-button--add";
+  addBtn.title = `新增${label}`;
+  addBtn.textContent = "+";
+  addBtn.addEventListener("click", onAdd);
+
+  header.append(lbl, addBtn);
+  wrapper.append(header);
+
+  const list = document.createElement("div");
+  list.className = "field-list";
+
+  items.forEach((value, index) => {
+    const itemRow = document.createElement("div");
+    itemRow.className = "field-list__item";
+
+    const input = document.createElement("input");
+    input.type = "url";
+    input.value = value || "";
+    input.placeholder = type === "image" ? "https://... (圖片網址)" : "https://... (參考網址)";
+    input.className = "inline-input";
+
+    input.addEventListener("input", (event) => {
+      onUpdate(index, event.target.value);
+    });
+
+    const controls = document.createElement("div");
+    controls.className = "field-list__controls";
+
+    const removeBtn = document.createElement("button");
+    removeBtn.type = "button";
+    removeBtn.className = "icon-button icon-button--remove";
+    removeBtn.title = "刪除欄位";
+    removeBtn.textContent = "×";
+    removeBtn.addEventListener("click", () => onRemove(index));
+
+    controls.append(removeBtn);
+    itemRow.append(input, controls);
+
+    if (type === "image" && value) {
+      const preview = document.createElement("div");
+      preview.className = "media-preview";
+      const img = document.createElement("img");
+      img.src = value;
+      img.alt = "圖片預覽";
+      preview.append(img);
+      itemRow.append(preview);
+    }
+
+    if (type === "link" && value) {
+      const previewLink = document.createElement("a");
+      previewLink.href = value;
+      previewLink.target = "_blank";
+      previewLink.rel = "noreferrer";
+      previewLink.className = "link-preview";
+      previewLink.textContent = value;
+      itemRow.append(previewLink);
+    }
+
+    list.append(itemRow);
+  });
+
+  wrapper.append(list);
+  return wrapper;
+}
+
+function renderNode(node, container, parent, depth = 0) {
+  const element = nodeTemplate.content.firstElementChild.cloneNode(true);
+  element.classList.add(`layout-${node.layout}`);
+  element.style.setProperty("--accent", getAccent(depth));
+  element.style.setProperty("--indent", `${depth * 18}px`);
+  element.dataset.depth = depth;
+
+  const titleEl = element.querySelector(".node__title");
+  titleEl.textContent = node.title;
+  titleEl.contentEditable = true;
+  titleEl.spellcheck = false;
+  titleEl.addEventListener("input", (event) => {
+    node.title = event.target.textContent;
+  });
+
+  const typeEl = element.querySelector(".node__type");
+  typeEl.textContent = node.type || "";
+  typeEl.contentEditable = true;
+  typeEl.spellcheck = false;
+  typeEl.addEventListener("input", (event) => {
+    node.type = event.target.textContent;
+  });
+
+  const toggleBtn = element.querySelector('[data-action="toggle"]');
+  toggleBtn.textContent = node.isOpen ? "收合" : "展開";
+
+  const content = element.querySelector(".node__content");
+  const childrenContainer = element.querySelector(".node__children");
+
+  const metaRow = document.createElement("div");
+  metaRow.className = "meta-row";
+  metaRow.append(createLayoutSelector(node));
+  content.append(metaRow);
+
+  const fieldsWrap = document.createElement("div");
+  fieldsWrap.className = `field-group fields-${node.layout}`;
+
+  const descriptionField = createEditableText("說明", node.description, (value) => {
+    node.description = value;
+  }, { multiline: true, placeholder: "輸入說明..." });
+
+  const notesField = createEditableText("注意事項", node.notes, (value) => {
+    node.notes = value;
+  }, { multiline: true, placeholder: "輸入注意事項..." });
+
+  fieldsWrap.append(descriptionField, notesField);
+  content.append(fieldsWrap);
+
+  const mediaWrap = document.createElement("div");
+  mediaWrap.className = `field-group fields-${node.layout}`;
+
+  const imageField = createListField(
+    "圖片網址",
+    node.images,
+    () => {
+      node.images.push("");
+      render();
+    },
+    (index, value) => {
+      node.images[index] = value;
+    },
+    (index) => {
+      node.images.splice(index, 1);
+      render();
+    },
+    { type: "image" }
+  );
+
+  const linkField = createListField(
+    "參考網址",
+    node.links,
+    () => {
+      node.links.push("");
+      render();
+    },
+    (index, value) => {
+      node.links[index] = value;
+    },
+    (index) => {
+      node.links.splice(index, 1);
+      render();
+    },
+    { type: "link" }
+  );
+
+  mediaWrap.append(imageField, linkField);
+  content.append(mediaWrap);
+
+  toggleBtn.addEventListener("click", () => {
+    node.isOpen = !node.isOpen;
+    render();
+  });
+
+  const deleteBtn = element.querySelector('[data-action="delete"]');
+  if (!parent) {
+    deleteBtn.disabled = true;
+    deleteBtn.title = "根節點無法刪除";
+  }
+
+  deleteBtn.addEventListener("click", () => {
+    if (!parent) return;
+    const confirmed = window.confirm(`確定要刪除「${node.title}」嗎？`);
+    if (!confirmed) return;
+    parent.children = parent.children.filter((child) => child !== node);
+    render();
+  });
+
+  if (!node.isOpen) {
+    element.querySelector(".node__content").style.display = "none";
+    element.querySelector(".node__children").style.display = "none";
+  }
+
+  if (node.children && node.children.length) {
+    node.children.forEach((child) => renderNode(child, childrenContainer, node, depth + 1));
+  }
+
+  container.append(element);
+}
+
+function render() {
+  app.innerHTML = "";
+  renderNode(processState, app, null, 0);
+}
+
+const processState = cloneDeep(processData);
+applyLayoutDefaults(processState);
+render();
+    </script>
+  </body>
+</html>
