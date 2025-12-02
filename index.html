@@ -27,6 +27,29 @@
       position: sticky;
       top: 0;
       z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .btn {
+      border: 1px solid var(--border);
+      background: var(--card);
+      color: var(--text);
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s ease, border 0.2s ease;
+    }
+    .btn:hover {
+      background: #eef2ff;
+      border-color: var(--accent);
     }
     main {
       max-width: 1200px;
@@ -129,10 +152,14 @@
     }
   </style>
 </head>
-<body>
-  <header>
-    <h1>驗收站點流程圖</h1>
-  </header>
+  <body>
+    <header>
+      <h1>驗收站點流程圖</h1>
+      <div class="actions" aria-label="操作按鈕群組">
+        <button type="button" class="btn" onclick="toggleAll(true)">全部展開</button>
+        <button type="button" class="btn" onclick="toggleAll(false)">全部收合</button>
+      </div>
+    </header>
   <main>
     <div id="tree" class="tree" aria-live="polite"></div>
   </main>
@@ -235,6 +262,12 @@
       }
 
       return detailsEl;
+    }
+
+    function toggleAll(open) {
+      document.querySelectorAll('#tree details').forEach(el => {
+        el.open = open;
+      });
     }
 
     function escapeHtml(str) {
@@ -463,24 +496,42 @@
               "isOpen": true,
               "children": [
                 {
-                  "id": "node-vvufoc2",
-                  "title": "若為RCRT",
-                  "description": "請填寫說明...",
+                  "id": "proc_gcgp",
+                  "title": "若為 GCGP (轉出專用)",
+                  "description": "⑩ 於 Cross Dock 工作表輸入實際驗收數量、移轉數量、板數。\n⑪ 於標籤上寫上數量，並貼上 GCGP 標籤至棧板側邊。\n⑫ 換上對應日的高角錐，並套上「紅白相間扁角錐」。",
+                  "notes": [
+                    "【GCGP 規範】",
+                    "• 每棧板最多五種貨物。",
+                    "• 標籤必須對應實際貨物並寫上數量。",
+                    "• 同一棧板 GCGP 貨物須為「相同轉出位置」，不同位置需分板。"
+                  ],
                   "type": "step",
                   "isOpen": true,
+                  "style": {
+                    "bgColor": "bg-rose-50",
+                    "borderColor": "border-rose-500",
+                    "fontFamily": "font-sans"
+                  },
                   "children": [],
-                  "notes": [],
                   "imageUrl": "",
                   "linkUrl": ""
                 },
                 {
-                  "id": "node-645pjvr",
-                  "title": "若為GCGP",
-                  "description": "請填寫說明...",
+                  "id": "proc_rcrt",
+                  "title": "若為 RCRT (廠內用)",
+                  "description": "⑩ 於標示上寫預計轉出位置與碼頭號。\n⑪ 貼至棧板側邊並換上對應日高角錐。\n⑫ 完成入庫。",
+                  "notes": [
+                    "【RCRT 規範】",
+                    "• 一個標示對應一種貨物。"
+                  ],
                   "type": "step",
                   "isOpen": true,
+                  "style": {
+                    "bgColor": "bg-emerald-50",
+                    "borderColor": "border-emerald-500",
+                    "fontFamily": "font-sans"
+                  },
                   "children": [],
-                  "notes": [],
                   "imageUrl": "",
                   "linkUrl": ""
                 }
@@ -506,51 +557,6 @@
           "notes": [],
           "imageUrl": "",
           "linkUrl": ""
-        },
-        {
-          "id": "pallet-branch-process",
-          "title": "後續實體作業 (依分類執行)",
-          "description": "根據步驟 ⑦ 選擇的分類 (GCGP 或 RCRT)，執行對應的標示與整板作業。",
-          "type": "process",
-          "isOpen": true,
-          "children": [
-            {
-              "id": "proc_gcgp",
-              "title": "若為 GCGP (轉出專用)",
-              "description": "⑩ 於 Cross Dock 工作表輸入實際驗收數量、移轉數量、板數。\n⑪ 於標籤上寫上數量，並貼上 GCGP 標籤至棧板側邊。\n⑫ 換上對應日的高角錐，並套上「紅白相間扁角錐」。",
-              "notes": [
-                "【GCGP 規範】",
-                "• 每棧板最多五種貨物。",
-                "• 標籤必須對應實際貨物並寫上數量。",
-                "• 同一棧板 GCGP 貨物須為「相同轉出位置」，不同位置需分板。"
-              ],
-              "type": "step",
-              "isOpen": true,
-              "style": {
-                "bgColor": "bg-rose-50",
-                "borderColor": "border-rose-500",
-                "fontFamily": "font-sans"
-              },
-              "children": []
-            },
-            {
-              "id": "proc_rcrt",
-              "title": "若為 RCRT (廠內用)",
-              "description": "⑩ 於標示上寫預計轉出位置與碼頭號。\n⑪ 貼至棧板側邊並換上對應日高角錐。\n⑫ 完成入庫。",
-              "notes": [
-                "【RCRT 規範】",
-                "• 一個標示對應一種貨物。"
-              ],
-              "type": "step",
-              "isOpen": true,
-              "style": {
-                "bgColor": "bg-emerald-50",
-                "borderColor": "border-emerald-500",
-                "fontFamily": "font-sans"
-              },
-              "children": []
-            }
-          ]
         }
       ],
       "imageUrl": "",
