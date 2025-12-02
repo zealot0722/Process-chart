@@ -53,12 +53,14 @@ body {
 }
 
 .node {
+  --accent: #cbd5e1;
   background: #fff;
-  border: 1px solid #cbd5e1;
+  border: 1px solid #e2e8f0;
+  border-left: 8px solid var(--accent);
   border-radius: 12px;
   padding: 1rem 1.25rem;
   margin-bottom: 1rem;
-  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
 }
 
 .node__header {
@@ -67,17 +69,24 @@ body {
   gap: 1rem;
   align-items: center;
   flex-wrap: wrap;
+  padding-bottom: 0.65rem;
+  border-bottom: 1px solid #e2e8f0;
 }
 
 .node__titles h2 {
   margin: 0;
   font-size: 1.2rem;
+  color: #0f172a;
 }
 
 .node__titles p {
   margin: 0.15rem 0 0;
   color: #475569;
   font-weight: 600;
+}
+
+.node[data-depth="0"] {
+  background: #f8fafc;
 }
 
 .node__actions {
@@ -210,28 +219,8 @@ body {
   justify-content: flex-end;
 }
 
-.tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  background: #e0f2fe;
-  color: #075985;
-  border: 1px solid #7dd3fc;
-  border-radius: 999px;
-  padding: 0.35rem 0.7rem;
-  font-size: 0.85rem;
-  font-weight: 700;
-}
-
 .layout-vertical .node__content {
   grid-template-columns: 1fr;
-}
-
-.badge-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.45rem;
-  margin-top: 0.5rem;
 }
 
 .helper-text {
@@ -304,22 +293,7 @@ body {
 }
 
 .fields-side-notes {
-  grid-template-columns: 2fr 1fr;
-  grid-template-areas:
-    "title title"
-    "description notes";
-}
-
-.fields-side-notes .field--title {
-  grid-area: title;
-}
-
-.fields-side-notes .field--description {
-  grid-area: description;
-}
-
-.fields-side-notes .field--notes {
-  grid-area: notes;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.85fr);
 }
 
     </style>
@@ -778,16 +752,16 @@ window.processData = {
   ],
 };
 
-window.layoutOptions = [
-  {
-    value: "vertical",
-    label: "直向堆疊",
-    description: "說明在上、注意事項在下，保持條列分明。",
-  },
-  {
-    value: "side-notes",
-    label: "左右分欄",
-    description: "說明在左、注意事項在右，便於對照重點。",
+    window.layoutOptions = [
+      {
+        value: "vertical",
+        label: "單欄排列",
+        description: "說明在上、注意事項在下，保持條列分明。",
+      },
+      {
+        value: "side-notes",
+        label: "左右分欄",
+        description: "說明在左、注意事項在右，便於對照重點。",
   },
 ];
 
@@ -798,10 +772,7 @@ const { layoutOptions, processData } = window;
 const app = document.querySelector("#app");
 const nodeTemplate = document.querySelector("#node-template");
 
-const layoutLabels = layoutOptions.reduce((map, option) => {
-  map[option.value] = option.label;
-  return map;
-}, {});
+const accentPalette = ["#2563eb", "#0ea5e9", "#22c55e", "#a855f7", "#f97316", "#ec4899"];
 
 function cloneDeep(node) {
   return JSON.parse(JSON.stringify(node));
@@ -827,13 +798,6 @@ function createField(label, value, extraClass = "") {
 
   wrapper.append(title, content);
   return wrapper;
-}
-
-function createBadge(text) {
-  const badge = document.createElement("span");
-  badge.className = "tag";
-  badge.textContent = text;
-  return badge;
 }
 
 function renderForm(node, onSubmit, onCancel) {
@@ -954,9 +918,15 @@ function createLayoutField(value) {
   return wrapper;
 }
 
-function renderNode(node, container, parent) {
+function getAccent(depth) {
+  return accentPalette[depth % accentPalette.length];
+}
+
+function renderNode(node, container, parent, depth = 0) {
   const element = nodeTemplate.content.firstElementChild.cloneNode(true);
   element.classList.add(`layout-${node.layout}`);
+  element.style.setProperty("--accent", getAccent(depth));
+  element.dataset.depth = depth;
 
   const titleEl = element.querySelector(".node__title");
   titleEl.textContent = node.title;
@@ -969,19 +939,12 @@ function renderNode(node, container, parent) {
 
   const content = element.querySelector(".node__content");
 
-  const badgeRow = document.createElement("div");
-  badgeRow.className = "badge-row";
-  badgeRow.append(createBadge(layoutLabels[node.layout] || "自訂版面"));
-  content.append(badgeRow);
-
   const fieldsWrap = document.createElement("div");
   fieldsWrap.className = `field-group fields-${node.layout}`;
 
-  const titleField = createField("標題", node.title, "field--stacked field--title");
   const descriptionField = createField("說明", node.description, "field--description");
   const notesField = createField("注意事項", node.notes, "notes field--notes");
 
-  if (titleField) fieldsWrap.append(titleField);
   if (descriptionField) fieldsWrap.append(descriptionField);
   if (notesField) fieldsWrap.append(notesField);
 
@@ -1040,7 +1003,7 @@ function renderNode(node, container, parent) {
   }
 
   if (node.children && node.children.length) {
-    node.children.forEach((child) => renderNode(child, childrenContainer, node));
+    node.children.forEach((child) => renderNode(child, childrenContainer, node, depth + 1));
   }
 
   container.append(element);
@@ -1048,7 +1011,7 @@ function renderNode(node, container, parent) {
 
 function render() {
   app.innerHTML = "";
-  renderNode(processState, app, null);
+  renderNode(processState, app, null, 0);
 }
 
 const processState = cloneDeep(processData);

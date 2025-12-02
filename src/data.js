@@ -427,7 +427,7 @@ window.processData = {
 window.layoutOptions = [
   {
     value: "vertical",
-    label: "直向堆疊",
+    label: "單欄排列",
     description: "說明在上、注意事項在下，保持條列分明。",
   },
   {

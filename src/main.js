@@ -3,10 +3,7 @@ const { layoutOptions, processData } = window;
 const app = document.querySelector("#app");
 const nodeTemplate = document.querySelector("#node-template");
 
-const layoutLabels = layoutOptions.reduce((map, option) => {
-  map[option.value] = option.label;
-  return map;
-}, {});
+const accentPalette = ["#2563eb", "#0ea5e9", "#22c55e", "#a855f7", "#f97316", "#ec4899"];
 
 function cloneDeep(node) {
   return JSON.parse(JSON.stringify(node));
@@ -32,13 +29,6 @@ function createField(label, value, extraClass = "") {
 
   wrapper.append(title, content);
   return wrapper;
-}
-
-function createBadge(text) {
-  const badge = document.createElement("span");
-  badge.className = "tag";
-  badge.textContent = text;
-  return badge;
 }
 
 function renderForm(node, onSubmit, onCancel) {
@@ -159,9 +149,15 @@ function createLayoutField(value) {
   return wrapper;
 }
 
-function renderNode(node, container, parent) {
+function getAccent(depth) {
+  return accentPalette[depth % accentPalette.length];
+}
+
+function renderNode(node, container, parent, depth = 0) {
   const element = nodeTemplate.content.firstElementChild.cloneNode(true);
   element.classList.add(`layout-${node.layout}`);
+  element.style.setProperty("--accent", getAccent(depth));
+  element.dataset.depth = depth;
 
   const titleEl = element.querySelector(".node__title");
   titleEl.textContent = node.title;
@@ -174,19 +170,12 @@ function renderNode(node, container, parent) {
 
   const content = element.querySelector(".node__content");
 
-  const badgeRow = document.createElement("div");
-  badgeRow.className = "badge-row";
-  badgeRow.append(createBadge(layoutLabels[node.layout] || "自訂版面"));
-  content.append(badgeRow);
-
   const fieldsWrap = document.createElement("div");
   fieldsWrap.className = `field-group fields-${node.layout}`;
 
-  const titleField = createField("標題", node.title, "field--stacked field--title");
   const descriptionField = createField("說明", node.description, "field--description");
   const notesField = createField("注意事項", node.notes, "notes field--notes");
 
-  if (titleField) fieldsWrap.append(titleField);
   if (descriptionField) fieldsWrap.append(descriptionField);
   if (notesField) fieldsWrap.append(notesField);
 
@@ -245,7 +234,7 @@ function renderNode(node, container, parent) {
   }
 
   if (node.children && node.children.length) {
-    node.children.forEach((child) => renderNode(child, childrenContainer, node));
+    node.children.forEach((child) => renderNode(child, childrenContainer, node, depth + 1));
   }
 
   container.append(element);
@@ -253,7 +242,7 @@ function renderNode(node, container, parent) {
 
 function render() {
   app.innerHTML = "";
-  renderNode(processState, app, null);
+  renderNode(processState, app, null, 0);
 }
 
 const processState = cloneDeep(processData);
