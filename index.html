@@ -97,6 +97,14 @@
       white-space: pre-line;
       line-height: 1.6;
     }
+    .node .meta {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-bottom: 6px;
+    }
+    .node .title { margin: 0; }
     .notes {
       margin: 8px 0;
       padding: 10px 12px;
@@ -150,6 +158,55 @@
       color: #0f172a;
       font-weight: 600;
     }
+    .node-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .pill {
+      padding: 4px 8px;
+      border-radius: 6px;
+      background: #e2e8f0;
+      color: #0f172a;
+      font-weight: 600;
+      border: 1px solid #cbd5e1;
+    }
+    .edit-panel {
+      display: grid;
+      gap: 8px;
+      margin-top: 12px;
+      padding: 12px;
+      border: 1px dashed var(--border);
+      border-radius: 8px;
+      background: #f8fafc;
+    }
+    .form-row {
+      display: grid;
+      grid-template-columns: 140px 1fr;
+      gap: 8px;
+      align-items: center;
+    }
+    .form-row label {
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .form-row input,
+    .form-row textarea,
+    .form-row select {
+      width: 100%;
+      padding: 6px 8px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-family: inherit;
+      font-size: 14px;
+      box-sizing: border-box;
+    }
+    .form-row textarea {
+      min-height: 70px;
+      resize: vertical;
+    }
+    .muted { color: var(--muted); }
   </style>
 </head>
   <body>
@@ -164,6 +221,8 @@
     <div id="tree" class="tree" aria-live="polite"></div>
   </main>
   <script>
+    let treeData = null;
+
     async function loadData() {
       const container = document.getElementById('tree');
       container.textContent = '載入中...';
@@ -189,44 +248,65 @@
       }
 
       container.textContent = '';
-      container.appendChild(renderNode(data));
+      treeData = data;
+      renderTree();
     }
 
-    function renderNode(node) {
+    function renderTree() {
+      const container = document.getElementById('tree');
+      container.innerHTML = '';
+      container.appendChild(renderNode(treeData, null));
+    }
+
+    function renderNode(node, parent) {
       const detailsEl = document.createElement('details');
       detailsEl.open = node.isOpen ?? true;
 
       const summary = document.createElement('summary');
       summary.className = 'summary';
+      const summaryColor = node?.style?.titleColor || node?.style?.textColor;
+      if (summaryColor) {
+        summary.style.color = summaryColor;
+      }
 
       const chevron = document.createElement('span');
       chevron.className = 'chevron';
       summary.appendChild(chevron);
 
+      const meta = document.createElement('div');
+      meta.className = 'meta';
+
+      const title = document.createElement('span');
+      title.className = 'title';
+      title.textContent = node.title || '未命名節點';
+      if (node?.style?.titleColor) {
+        title.style.color = node.style.titleColor;
+      }
+      meta.appendChild(title);
+
       const type = document.createElement('span');
       type.className = 'badge';
       type.textContent = node.type || 'node';
+      meta.appendChild(type);
 
-      const title = document.createElement('span');
-      title.textContent = node.title || '未命名節點';
-      title.style.fontWeight = '700';
-
-      summary.appendChild(title);
-      summary.appendChild(type);
+      summary.appendChild(meta);
       detailsEl.appendChild(summary);
 
       const card = document.createElement('div');
       card.className = 'node';
+      applyCardStyle(card, node);
 
       const desc = document.createElement('p');
       desc.className = 'desc';
       desc.textContent = node.description || '';
+      applyTextStyle(desc, node?.style?.contentStyle);
       card.appendChild(desc);
 
       if (node.notes && node.notes.length) {
         const notes = document.createElement('div');
         notes.className = 'notes';
         notes.innerHTML = node.notes.map(line => escapeHtml(line)).join('<br />');
+        applyTextStyle(notes, node?.style?.notesStyle);
         card.appendChild(notes);
       }
 
@@ -254,10 +334,49 @@
 
       detailsEl.appendChild(card);
 
+      const actions = document.createElement('div');
+      actions.className = 'node-actions';
+
+      const addBtn = document.createElement('button');
+      addBtn.type = 'button';
+      addBtn.className = 'btn';
+      addBtn.textContent = '新增子區塊';
+      addBtn.onclick = () => handleAddChild(node);
+      actions.appendChild(addBtn);
+
+      if (parent) {
+        const delBtn = document.createElement('button');
+        delBtn.type = 'button';
+        delBtn.className = 'btn';
+        delBtn.textContent = '刪除區塊';
+        delBtn.onclick = () => handleDelete(node, parent);
+        actions.appendChild(delBtn);
+      } else {
+        const rootPill = document.createElement('span');
+        rootPill.className = 'pill';
+        rootPill.textContent = '根區塊';
+        actions.appendChild(rootPill);
+      }
+
+      const editToggle = document.createElement('button');
+      editToggle.type = 'button';
+      editToggle.className = 'btn';
+      editToggle.textContent = '編輯樣式與內容';
+      actions.appendChild(editToggle);
+
+      const editPanel = buildEditPanel(node);
+      editPanel.hidden = true;
+      editToggle.onclick = () => {
+        editPanel.hidden = !editPanel.hidden;
+      };
+
+      card.appendChild(actions);
+      card.appendChild(editPanel);
+
       if (node.children && node.children.length) {
         const children = document.createElement('div');
         children.className = 'children';
-        node.children.forEach(child => children.appendChild(renderNode(child)));
+        node.children.forEach(child => children.appendChild(renderNode(child, node)));
         detailsEl.appendChild(children);
       }
 
@@ -268,6 +387,132 @@
       document.querySelectorAll('#tree details').forEach(el => {
         el.open = open;
       });
+    }
+
+    function handleAddChild(node) {
+      const title = prompt('請輸入子區塊標題：');
+      if (!title) return;
+      const type = prompt('請輸入子區塊類型（role/process/step）：', 'step') || 'step';
+
+      const newNode = {
+        id: `${node.id}-${Date.now()}`,
+        title,
+        description: '請填寫描述...',
+        type,
+        isOpen: true,
+        children: []
+      };
+
+      node.children = node.children || [];
+      node.children.push(newNode);
+      renderTree();
+    }
+
+    function handleDelete(node, parent) {
+      if (!confirm('確定要刪除這個區塊嗎？')) return;
+      parent.children = (parent.children || []).filter(child => child !== node);
+      renderTree();
+    }
+
+    function buildEditPanel(node) {
+      const panel = document.createElement('div');
+      panel.className = 'edit-panel';
+
+      const fields = [
+        { key: 'title', label: '標題', type: 'text', value: node.title || '' },
+        { key: 'description', label: '描述', type: 'textarea', value: node.description || '' },
+        { key: 'type', label: '類型', type: 'text', value: node.type || '' },
+        { key: 'notes', label: '注意事項（每行一則）', type: 'textarea', value: (node.notes || []).join('\n') },
+        { key: 'linkUrl', label: '網址', type: 'text', value: node.linkUrl || '' },
+        { key: 'imageUrl', label: '圖片網址', type: 'text', value: node.imageUrl || '' },
+        { key: 'titleColor', label: '標題文字顏色', type: 'color', value: node?.style?.titleColor || '#0f172a' },
+        { key: 'textColor', label: '內容文字顏色', type: 'color', value: node?.style?.textColor || '#475569' },
+        { key: 'bgColor', label: '區塊背景色', type: 'color', value: node?.style?.bgColor || '#ffffff' },
+        { key: 'borderColor', label: '左側線條顏色', type: 'color', value: node?.style?.borderColor || '#2563eb' },
+        { key: 'contentSize', label: '文字大小', type: 'select', value: node?.style?.contentSize || '14px', options: ['12px','14px','16px','18px'] },
+      ];
+
+      const refs = {};
+
+      fields.forEach(field => {
+        const row = document.createElement('div');
+        row.className = 'form-row';
+
+        const label = document.createElement('label');
+        label.textContent = field.label;
+        label.htmlFor = `${node.id}-${field.key}`;
+
+        let input;
+        if (field.type === 'textarea') {
+          input = document.createElement('textarea');
+          input.value = field.value;
+        } else if (field.type === 'select') {
+          input = document.createElement('select');
+          field.options.forEach(opt => {
+            const optionEl = document.createElement('option');
+            optionEl.value = opt;
+            optionEl.textContent = opt;
+            if (opt === field.value) optionEl.selected = true;
+            input.appendChild(optionEl);
+          });
+        } else {
+          input = document.createElement('input');
+          input.type = field.type;
+          input.value = field.value;
+        }
+
+        input.id = label.htmlFor;
+        row.appendChild(label);
+        row.appendChild(input);
+        refs[field.key] = input;
+        panel.appendChild(row);
+      });
+
+      const save = document.createElement('button');
+      save.type = 'button';
+      save.className = 'btn';
+      save.textContent = '套用設定';
+      save.onclick = () => {
+        node.title = refs.title.value.trim() || node.title;
+        node.description = refs.description.value;
+        node.type = refs.type.value.trim() || node.type;
+        node.notes = refs.notes.value
+          .split('\n')
+          .map(line => line.trim())
+          .filter(Boolean);
+        node.linkUrl = refs.linkUrl.value.trim();
+        node.imageUrl = refs.imageUrl.value.trim();
+
+        node.style = node.style || {};
+        node.style.titleColor = refs.titleColor.value;
+        node.style.textColor = refs.textColor.value;
+        node.style.bgColor = refs.bgColor.value;
+        node.style.borderColor = refs.borderColor.value;
+        node.style.contentSize = refs.contentSize.value;
+
+        renderTree();
+      };
+
+      panel.appendChild(save);
+      return panel;
+    }
+
+    function applyCardStyle(card, node) {
+      const style = node?.style || {};
+      if (style.bgColor) card.style.background = style.bgColor;
+      if (style.borderColor) {
+        card.style.borderLeftColor = style.borderColor;
+        card.style.borderColor = style.borderColor;
+      }
+      if (style.contentSize) card.style.fontSize = style.contentSize;
+      if (style.textColor) card.style.color = style.textColor;
+    }
+
+    function applyTextStyle(el, style) {
+      if (!style) return;
+      if (style.color) el.style.color = style.color;
+      if (style.fontSize) el.style.fontSize = style.fontSize;
+      if (style.fontWeight) el.style.fontWeight = style.fontWeight;
     }
 
     function escapeHtml(str) {
@@ -306,11 +551,10 @@
   "type": "role",
   "isOpen": true,
   "style": {
-    "bgColor": "bg-white",
-    "borderColor": "border-blue-500",
-    "fontFamily": "font-sans",
-    "titleSize": "text-2xl",
-    "contentSize": "text-base"
+    "bgColor": "#ffffff",
+    "borderColor": "#2563eb",
+    "textColor": "#0f172a",
+    "contentSize": "16px"
   },
   "children": [
     {
@@ -425,11 +669,10 @@
       "type": "process",
       "isOpen": true,
       "style": {
-        "bgColor": "bg-white",
-        "borderColor": "border-blue-500",
-        "fontFamily": "font-sans",
-        "titleSize": "text-xl",
-        "contentSize": "text-base"
+        "bgColor": "#ffffff",
+        "borderColor": "#2563eb",
+        "textColor": "#0f172a",
+        "contentSize": "15px"
       },
       "children": [
         {
@@ -508,9 +751,9 @@
                   "type": "step",
                   "isOpen": true,
                   "style": {
-                    "bgColor": "bg-rose-50",
-                    "borderColor": "border-rose-500",
-                    "fontFamily": "font-sans"
+                    "bgColor": "#fff1f2",
+                    "borderColor": "#f43f5e",
+                    "textColor": "#0f172a"
                   },
                   "children": [],
                   "imageUrl": "",
@@ -527,9 +770,9 @@
                   "type": "step",
                   "isOpen": true,
                   "style": {
-                    "bgColor": "bg-emerald-50",
-                    "borderColor": "border-emerald-500",
-                    "fontFamily": "font-sans"
+                    "bgColor": "#ecfdf3",
+                    "borderColor": "#10b981",
+                    "textColor": "#064e3b"
                   },
                   "children": [],
                   "imageUrl": "",

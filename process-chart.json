@@ -9,11 +9,10 @@
   "type": "role",
   "isOpen": true,
   "style": {
-    "bgColor": "bg-white",
-    "borderColor": "border-blue-500",
-    "fontFamily": "font-sans",
-    "titleSize": "text-2xl",
-    "contentSize": "text-base"
+    "bgColor": "#ffffff",
+    "borderColor": "#2563eb",
+    "textColor": "#0f172a",
+    "contentSize": "16px"
   },
   "children": [
     {
@@ -128,11 +127,10 @@
       "type": "process",
       "isOpen": true,
       "style": {
-        "bgColor": "bg-white",
-        "borderColor": "border-blue-500",
-        "fontFamily": "font-sans",
-        "titleSize": "text-xl",
-        "contentSize": "text-base"
+        "bgColor": "#ffffff",
+        "borderColor": "#2563eb",
+        "textColor": "#0f172a",
+        "contentSize": "15px"
       },
       "children": [
         {
@@ -211,9 +209,9 @@
                   "type": "step",
                   "isOpen": true,
                   "style": {
-                    "bgColor": "bg-rose-50",
-                    "borderColor": "border-rose-500",
-                    "fontFamily": "font-sans"
+                    "bgColor": "#fff1f2",
+                    "borderColor": "#f43f5e",
+                    "textColor": "#0f172a"
                   },
                   "children": [],
                   "imageUrl": "",
@@ -230,9 +228,9 @@
                   "type": "step",
                   "isOpen": true,
                   "style": {
-                    "bgColor": "bg-emerald-50",
-                    "borderColor": "border-emerald-500",
-                    "fontFamily": "font-sans"
+                    "bgColor": "#ecfdf3",
+                    "borderColor": "#10b981",
+                    "textColor": "#064e3b"
                   },
                   "children": [],
                   "imageUrl": "",
