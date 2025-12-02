@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>驗收站點流程圖</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --border: #cbd5e1;
+      --text: #0f172a;
+      --accent: #2563eb;
+      --muted: #475569;
+    }
+    body {
+      margin: 0;
+      font-family: "Noto Sans TC", "Helvetica Neue", Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+    header {
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 24px;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .btn {
+      border: 1px solid var(--border);
+      background: var(--card);
+      color: var(--text);
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s ease, border 0.2s ease;
+    }
+    .btn:hover {
+      background: #eef2ff;
+      border-color: var(--accent);
+    }
+    main {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+    h1 {
+      margin: 0;
+      font-size: 24px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .tree {
+      display: grid;
+      gap: 12px;
+    }
+    .node {
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--accent);
+      background: var(--card);
+      padding: 12px 14px 12px 18px;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+    }
+    .node .title {
+      font-weight: 700;
+      margin: 0 0 6px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 16px;
+    }
+    .node .type {
+      background: rgba(37, 99, 235, 0.08);
+      color: var(--accent);
+      border-radius: 6px;
+      padding: 2px 8px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .node .desc {
+      margin: 0 0 8px;
+      color: var(--muted);
+      white-space: pre-line;
+      line-height: 1.6;
+    }
+    .node .meta {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-bottom: 6px;
+    }
+    .node .title { margin: 0; }
+    .notes {
+      margin: 8px 0;
+      padding: 10px 12px;
+      background: #fef9c3;
+      border: 1px solid #f59e0b;
+      border-radius: 8px;
+      color: #92400e;
+      line-height: 1.5;
+    }
+    .children {
+      border-left: 1px dashed var(--border);
+      margin-left: 14px;
+      padding-left: 14px;
+      display: grid;
+      gap: 12px;
+    }
+    details {
+      border: none;
+    }
+    details summary {
+      cursor: pointer;
+      list-style: none;
+      outline: none;
+    }
+    details summary::-webkit-details-marker {
+      display: none;
+    }
+    .summary {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .chevron {
+      width: 10px;
+      height: 10px;
+      border-right: 2px solid var(--muted);
+      border-bottom: 2px solid var(--muted);
+      transform: rotate(45deg);
+      transition: transform 0.2s ease;
+      margin-right: 4px;
+    }
+    details[open] .chevron {
+      transform: rotate(135deg);
+    }
+    .badge {
+      display: inline-block;
+      padding: 2px 6px;
+      font-size: 11px;
+      border-radius: 6px;
+      background: #e2e8f0;
+      color: #0f172a;
+      font-weight: 600;
+    }
+    .node-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .pill {
+      padding: 4px 8px;
+      border-radius: 6px;
+      background: #e2e8f0;
+      color: #0f172a;
+      font-weight: 600;
+      border: 1px solid #cbd5e1;
+    }
+    .edit-panel {
+      display: grid;
+      gap: 8px;
+      margin-top: 12px;
+      padding: 12px;
+      border: 1px dashed var(--border);
+      border-radius: 8px;
+      background: #f8fafc;
+    }
+    .form-row {
+      display: grid;
+      grid-template-columns: 140px 1fr;
+      gap: 8px;
+      align-items: center;
+    }
+    .form-row label {
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .form-row input,
+    .form-row textarea,
+    .form-row select {
+      width: 100%;
+      padding: 6px 8px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-family: inherit;
+      font-size: 14px;
+      box-sizing: border-box;
+    }
+    .form-row textarea {
+      min-height: 70px;
+      resize: vertical;
+    }
+    .muted { color: var(--muted); }
+  </style>
+</head>
+  <body>
+    <header>
+      <h1>驗收站點流程圖</h1>
+      <div class="actions" aria-label="操作按鈕群組">
+        <button type="button" class="btn" onclick="toggleAll(true)">全部展開</button>
+        <button type="button" class="btn" onclick="toggleAll(false)">全部收合</button>
+      </div>
+    </header>
+  <main>
+    <div id="tree" class="tree" aria-live="polite"></div>
+  </main>
+  <script>
+    let treeData = null;
+
+    async function loadData() {
+      const container = document.getElementById('tree');
+      container.textContent = '載入中...';
+
+      let data = null;
+
+      try {
+        const res = await fetch(new URL('process-chart.json', window.location.href));
+
+        if (!res.ok) {
+          throw new Error('HTTP ' + res.status);
+        }
+
+        data = await res.json();
+      } catch (err) {
+        console.warn('取得 process-chart.json 失敗，改用內嵌資料。', err);
+        data = readEmbeddedData();
+
+        if (!data) {
+          container.textContent = '載入流程資料時發生錯誤：' + err.message;
+          return;
+        }
+      }
+
+      container.textContent = '';
+      treeData = data;
+      renderTree();
+    }
+
+    function renderTree() {
+      const container = document.getElementById('tree');
+      container.innerHTML = '';
+      container.appendChild(renderNode(treeData, null));
+    }
+
+    function renderNode(node, parent) {
+      const detailsEl = document.createElement('details');
+      detailsEl.open = node.isOpen ?? true;
+
+      const summary = document.createElement('summary');
+      summary.className = 'summary';
+      const summaryColor = node?.style?.titleColor || node?.style?.textColor;
+      if (summaryColor) {
+        summary.style.color = summaryColor;
+      }
+
+      const chevron = document.createElement('span');
+      chevron.className = 'chevron';
+      summary.appendChild(chevron);
+
+      const meta = document.createElement('div');
+      meta.className = 'meta';
+
+      const title = document.createElement('span');
+      title.className = 'title';
+      title.textContent = node.title || '未命名節點';
+      if (node?.style?.titleColor) {
+        title.style.color = node.style.titleColor;
+      }
+      meta.appendChild(title);
+
+      const type = document.createElement('span');
+      type.className = 'badge';
+      type.textContent = node.type || 'node';
+      meta.appendChild(type);
+
+      summary.appendChild(meta);
+      detailsEl.appendChild(summary);
+
+      const card = document.createElement('div');
+      card.className = 'node';
+      applyCardStyle(card, node);
+
+      const desc = document.createElement('p');
+      desc.className = 'desc';
+      desc.textContent = node.description || '';
+      applyTextStyle(desc, node?.style?.contentStyle);
+      card.appendChild(desc);
+
+      if (node.notes && node.notes.length) {
+        const notes = document.createElement('div');
+        notes.className = 'notes';
+        notes.innerHTML = node.notes.map(line => escapeHtml(line)).join('<br />');
+        applyTextStyle(notes, node?.style?.notesStyle);
+        card.appendChild(notes);
+      }
+
+      if (node.imageUrl) {
+        const img = document.createElement('img');
+        img.src = node.imageUrl;
+        img.alt = node.title + ' 圖片';
+        img.style.maxWidth = '100%';
+        img.style.borderRadius = '8px';
+        img.style.marginTop = '8px';
+        card.appendChild(img);
+      }
+
+      if (node.linkUrl) {
+        const link = document.createElement('a');
+        link.href = node.linkUrl;
+        link.textContent = '相關連結';
+        link.target = '_blank';
+        link.rel = 'noreferrer noopener';
+        link.style.display = 'inline-block';
+        link.style.marginTop = '8px';
+        link.style.color = '#2563eb';
+        card.appendChild(link);
+      }
+
+      detailsEl.appendChild(card);
+
+      const actions = document.createElement('div');
+      actions.className = 'node-actions';
+
+      const addBtn = document.createElement('button');
+      addBtn.type = 'button';
+      addBtn.className = 'btn';
+      addBtn.textContent = '新增子區塊';
+      addBtn.onclick = () => handleAddChild(node);
+      actions.appendChild(addBtn);
+
+      if (parent) {
+        const delBtn = document.createElement('button');
+        delBtn.type = 'button';
+        delBtn.className = 'btn';
+        delBtn.textContent = '刪除區塊';
+        delBtn.onclick = () => handleDelete(node, parent);
+        actions.appendChild(delBtn);
+      } else {
+        const rootPill = document.createElement('span');
+        rootPill.className = 'pill';
+        rootPill.textContent = '根區塊';
+        actions.appendChild(rootPill);
+      }
+
+      const editToggle = document.createElement('button');
+      editToggle.type = 'button';
+      editToggle.className = 'btn';
+      editToggle.textContent = '編輯樣式與內容';
+      actions.appendChild(editToggle);
+
+      const editPanel = buildEditPanel(node);
+      editPanel.hidden = true;
+      editToggle.onclick = () => {
+        editPanel.hidden = !editPanel.hidden;
+      };
+
+      card.appendChild(actions);
+      card.appendChild(editPanel);
+
+      if (node.children && node.children.length) {
+        const children = document.createElement('div');
+        children.className = 'children';
+        node.children.forEach(child => children.appendChild(renderNode(child, node)));
+        detailsEl.appendChild(children);
+      }
+
+      return detailsEl;
+    }
+
+    function toggleAll(open) {
+      document.querySelectorAll('#tree details').forEach(el => {
+        el.open = open;
+      });
+    }
+
+    function handleAddChild(node) {
+      const title = prompt('請輸入子區塊標題：');
+      if (!title) return;
+      const type = prompt('請輸入子區塊類型（role/process/step）：', 'step') || 'step';
+
+      const newNode = {
+        id: `${node.id}-${Date.now()}`,
+        title,
+        description: '請填寫描述...',
+        type,
+        isOpen: true,
+        children: []
+      };
+
+      node.children = node.children || [];
+      node.children.push(newNode);
+      renderTree();
+    }
+
+    function handleDelete(node, parent) {
+      if (!confirm('確定要刪除這個區塊嗎？')) return;
+      parent.children = (parent.children || []).filter(child => child !== node);
+      renderTree();
+    }
+
+    function buildEditPanel(node) {
+      const panel = document.createElement('div');
+      panel.className = 'edit-panel';
+
+      const fields = [
+        { key: 'title', label: '標題', type: 'text', value: node.title || '' },
+        { key: 'description', label: '描述', type: 'textarea', value: node.description || '' },
+        { key: 'type', label: '類型', type: 'text', value: node.type || '' },
+        { key: 'notes', label: '注意事項（每行一則）', type: 'textarea', value: (node.notes || []).join('\n') },
+        { key: 'linkUrl', label: '網址', type: 'text', value: node.linkUrl || '' },
+        { key: 'imageUrl', label: '圖片網址', type: 'text', value: node.imageUrl || '' },
+        { key: 'titleColor', label: '標題文字顏色', type: 'color', value: node?.style?.titleColor || '#0f172a' },
+        { key: 'textColor', label: '內容文字顏色', type: 'color', value: node?.style?.textColor || '#475569' },
+        { key: 'bgColor', label: '區塊背景色', type: 'color', value: node?.style?.bgColor || '#ffffff' },
+        { key: 'borderColor', label: '左側線條顏色', type: 'color', value: node?.style?.borderColor || '#2563eb' },
+        { key: 'contentSize', label: '文字大小', type: 'select', value: node?.style?.contentSize || '14px', options: ['12px','14px','16px','18px'] },
+      ];
+
+      const refs = {};
+
+      fields.forEach(field => {
+        const row = document.createElement('div');
+        row.className = 'form-row';
+
+        const label = document.createElement('label');
+        label.textContent = field.label;
+        label.htmlFor = `${node.id}-${field.key}`;
+
+        let input;
+        if (field.type === 'textarea') {
+          input = document.createElement('textarea');
+          input.value = field.value;
+        } else if (field.type === 'select') {
+          input = document.createElement('select');
+          field.options.forEach(opt => {
+            const optionEl = document.createElement('option');
+            optionEl.value = opt;
+            optionEl.textContent = opt;
+            if (opt === field.value) optionEl.selected = true;
+            input.appendChild(optionEl);
+          });
+        } else {
+          input = document.createElement('input');
+          input.type = field.type;
+          input.value = field.value;
+        }
+
+        input.id = label.htmlFor;
+        row.appendChild(label);
+        row.appendChild(input);
+        refs[field.key] = input;
+        panel.appendChild(row);
+      });
+
+      const save = document.createElement('button');
+      save.type = 'button';
+      save.className = 'btn';
+      save.textContent = '套用設定';
+      save.onclick = () => {
+        node.title = refs.title.value.trim() || node.title;
+        node.description = refs.description.value;
+        node.type = refs.type.value.trim() || node.type;
+        node.notes = refs.notes.value
+          .split('\n')
+          .map(line => line.trim())
+          .filter(Boolean);
+        node.linkUrl = refs.linkUrl.value.trim();
+        node.imageUrl = refs.imageUrl.value.trim();
+
+        node.style = node.style || {};
+        node.style.titleColor = refs.titleColor.value;
+        node.style.textColor = refs.textColor.value;
+        node.style.bgColor = refs.bgColor.value;
+        node.style.borderColor = refs.borderColor.value;
+        node.style.contentSize = refs.contentSize.value;
+
+        renderTree();
+      };
+
+      panel.appendChild(save);
+      return panel;
+    }
+
+    function applyCardStyle(card, node) {
+      const style = node?.style || {};
+      if (style.bgColor) card.style.background = style.bgColor;
+      if (style.borderColor) {
+        card.style.borderLeftColor = style.borderColor;
+        card.style.borderColor = style.borderColor;
+      }
+      if (style.contentSize) card.style.fontSize = style.contentSize;
+      if (style.textColor) card.style.color = style.textColor;
+    }
+
+    function applyTextStyle(el, style) {
+      if (!style) return;
+      if (style.color) el.style.color = style.color;
+      if (style.fontSize) el.style.fontSize = style.fontSize;
+      if (style.fontWeight) el.style.fontWeight = style.fontWeight;
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/\"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function readEmbeddedData() {
+      const script = document.getElementById('embedded-data');
+
+      if (!script) return null;
+
+      try {
+        return JSON.parse(script.textContent);
+      } catch (err) {
+        console.error('解析內嵌資料失敗。', err);
+        return null;
+      }
+    }
+
+    loadData();
+  </script>
+  <script id="embedded-data" type="application/json">
+{
+  "id": "root",
+  "title": "驗收站點(RCV)",
+  "description": "主要處理的貨物稱為NYR(Not Yet Receive)。\n作業分為板驗及散驗，需依商品的大小及數量去區分應使用的驗收方式。\n需要觀察當天預計到倉量、碼頭的卸貨量、未卸板數、各板貨態、移倉數量等等來決定散驗及板驗人力的配置。",
+  "notes": [
+    "驗收量需大於碼頭的卸貨量，否則會造成碼頭塞車。",
+    "若有多餘人力，需要觀察上架的待上架商品暫存區是否有足夠的貨物可上架，並與上架Captain確認是否需要補貨。"
+  ],
+  "type": "role",
+  "isOpen": true,
+  "style": {
+    "bgColor": "#ffffff",
+    "borderColor": "#2563eb",
+    "textColor": "#0f172a",
+    "contentSize": "16px"
+  },
+  "children": [
+    {
+      "id": "process",
+      "title": "散驗作業流程",
+      "description": "驗收員會在輸送帶旁的工作台進行商品驗收與決定入庫位置。\n可裝入物流箱的為散貨，無法裝入箱或太大者為板貨。",
+      "notes": [
+        "商品品名、外觀、規格是否與系統一致？商品是否需要效期、及效期是否超過系統顯示？商品最小包裝單位為何？外部包裝是否與內部包裝一致？若有任何問題則務必通知PS。"
+      ],
+      "type": "process",
+      "isOpen": true,
+      "children": [
+        {
+          "id": "step1",
+          "title": "步驟 1：啟動輸送帶",
+          "description": "按下綠色按鈕啟動輸送帶，讓貨到達工作台。",
+          "type": "step",
+          "isOpen": false,
+          "children": []
+        },
+        {
+          "id": "step2",
+          "title": "步驟 2：開啟系統",
+          "description": "打開 worker tool，選擇「入庫」功能。",
+          "type": "step",
+          "isOpen": false,
+          "children": []
+        },
+        {
+          "id": "step3",
+          "title": "步驟 3：刷讀條碼",
+          "description": "依序刷以下條碼：\n1. 工作台條碼\n2. IBC 條碼（麥頭上）\n3. 商品條碼",
+          "type": "step",
+          "isOpen": false,
+          "children": []
+        },
+        {
+          "id": "step4",
+          "title": "步驟 4：商品檢核",
+          "description": "檢查外觀、品名、圖片、效期等是否與系統相符。",
+          "notes": [
+            "⚠️ 效期需大於系統顯示日期，若小於請報警示。"
+          ],
+          "type": "step",
+          "isOpen": false,
+          "children": []
+        },
+        {
+          "id": "step5",
+          "title": "步驟 5：裝箱",
+          "description": "驗收完成後，將商品放入物流箱內。",
+          "notes": [
+            "⚠️ 注意不要超過限高線，以免造成後續自動倉儲卡貨。"
+          ],
+          "type": "step",
+          "isOpen": false,
+          "children": []
+        },
+        {
+          "id": "step6",
+          "title": "步驟 6：輸入數量與儲位",
+          "description": "在系統輸入數量，選擇要送去的倉庫位置（一樓或二樓）。\n部分商品會自動分配儲位，其他需手動選取。",
+          "type": "step",
+          "isOpen": false,
+          "children": []
+        },
+        {
+          "id": "step7",
+          "title": "步驟 7：確認入庫",
+          "description": "掃物流箱條碼，確認入庫完成。",
+          "type": "step",
+          "isOpen": false,
+          "children": []
+        },
+        {
+          "id": "step8",
+          "title": "步驟 8：資料查驗",
+          "description": "開啟物流箱條碼查驗資料，若正確，點選「入庫」。",
+          "type": "step",
+          "isOpen": false,
+          "children": []
+        },
+        {
+          "id": "step9",
+          "title": "步驟 9：完成作業",
+          "description": "將物流箱推入下方輸送帶，完成本次散驗。",
+          "type": "step",
+          "isOpen": false,
+          "children": []
+        }
+      ],
+      "imageUrl": "",
+      "linkUrl": ""
+    },
+    {
+      "id": "node-pallet-root",
+      "title": "板驗作業 (Pallet Receiving)",
+      "description": "負責棧板貨物的驗收、分類與入庫作業。\n區分為廠內用 (RCRT) 與轉出專用 (GCGP/GCGT)。",
+      "notes": [
+        "【移轉商品】",
+        "• 優先確認是否為移轉商品，移轉商品不可與一般入庫商品混和。",
+        "",
+        "【一般規範】",
+        "• 板驗人員標示請用「白色膠帶」。",
+        "• 驗效期以「抽查四角與中間」方式進行，以防過期混貨。",
+        "• 食品、母嬰、洗浴等與人體接觸商品，「禁止於效期處貼標」或塗改。",
+        "",
+        "【重量限制】",
+        "• 一般板：800kg",
+        "• 液體類：可至 1000kg (但轉出不得超過 800kg)"
+      ],
+      "type": "process",
+      "isOpen": true,
+      "style": {
+        "bgColor": "#ffffff",
+        "borderColor": "#2563eb",
+        "textColor": "#0f172a",
+        "contentSize": "15px"
+      },
+      "children": [
+        {
+          "id": "pallet-common-process",
+          "title": "板驗作業流程",
+          "description": "所有板驗貨物皆須執行的標準系統操作步驟。",
+          "type": "process",
+          "isOpen": true,
+          "children": [
+            {
+              "id": "p-step1",
+              "title": "① 開啟系統",
+              "description": "開啟 WMS 系統驗收功能，登入時需使用板驗台。",
+              "type": "step",
+              "isOpen": true,
+              "children": [],
+              "notes": [],
+              "imageUrl": "",
+              "linkUrl": ""
+            },
+            {
+              "id": "p-step2",
+              "title": "② 刷入工作檯",
+              "description": "刷入工作檯分類條碼。",
+              "type": "step",
+              "isOpen": false,
+              "children": []
+            },
+            {
+              "id": "p-step3",
+              "title": "③ 刷入 IBC",
+              "description": "刷入待驗 IBC 條碼。",
+              "type": "step",
+              "isOpen": false,
+              "children": []
+            },
+            {
+              "id": "p-step5",
+              "title": "⑤ 盤點",
+              "description": "盤點貨物數量與效期。",
+              "notes": [
+                "務必檢查四角與中間貨物，防止混入過期品。"
+              ],
+              "type": "step",
+              "isOpen": true,
+              "children": []
+            },
+            {
+              "id": "p-step6",
+              "title": "⑥ 輸入數量",
+              "description": "於系統輸入實際驗收數量。",
+              "type": "step",
+              "isOpen": true,
+              "children": []
+            },
+            {
+              "id": "p-step7",
+              "title": "⑦ 選擇物流箱分類",
+              "description": "選擇物流箱分類：\n• RCRT：廠內用\n• GCGP：轉出專用",
+              "notes": [
+                "⚠️ 同一棧板若部分需移轉，應「優先處理移轉貨」。GCGP 填滿後再進行 RCRT，兩者標籤可共用一板。"
+              ],
+              "type": "step",
+              "isOpen": true,
+              "children": [
+                {
+                  "id": "proc_gcgp",
+                  "title": "若為 GCGP (轉出專用)",
+                  "description": "⑩ 於 Cross Dock 工作表輸入實際驗收數量、移轉數量、板數。\n⑪ 於標籤上寫上數量，並貼上 GCGP 標籤至棧板側邊。\n⑫ 換上對應日的高角錐，並套上「紅白相間扁角錐」。",
+                  "notes": [
+                    "【GCGP 規範】",
+                    "• 每棧板最多五種貨物。",
+                    "• 標籤必須對應實際貨物並寫上數量。",
+                    "• 同一棧板 GCGP 貨物須為「相同轉出位置」，不同位置需分板。"
+                  ],
+                  "type": "step",
+                  "isOpen": true,
+                  "style": {
+                    "bgColor": "#fff1f2",
+                    "borderColor": "#f43f5e",
+                    "textColor": "#0f172a"
+                  },
+                  "children": [],
+                  "imageUrl": "",
+                  "linkUrl": ""
+                },
+                {
+                  "id": "proc_rcrt",
+                  "title": "若為 RCRT (廠內用)",
+                  "description": "⑩ 於標示上寫預計轉出位置與碼頭號。\n⑪ 貼至棧板側邊並換上對應日高角錐。\n⑫ 完成入庫。",
+                  "notes": [
+                    "【RCRT 規範】",
+                    "• 一個標示對應一種貨物。"
+                  ],
+                  "type": "step",
+                  "isOpen": true,
+                  "style": {
+                    "bgColor": "#ecfdf3",
+                    "borderColor": "#10b981",
+                    "textColor": "#064e3b"
+                  },
+                  "children": [],
+                  "imageUrl": "",
+                  "linkUrl": ""
+                }
+              ]
+            },
+            {
+              "id": "p-step8",
+              "title": "⑧ 確認物流箱",
+              "description": "刷入對應條碼，並點選物流箱號碼確認。",
+              "type": "step",
+              "isOpen": true,
+              "children": []
+            },
+            {
+              "id": "p-step9",
+              "title": "⑨ 完成驗收",
+              "description": "點選「入庫」完成系統驗收作業。",
+              "type": "step",
+              "isOpen": true,
+              "children": []
+            }
+          ],
+          "notes": [],
+          "imageUrl": "",
+          "linkUrl": ""
+        }
+      ],
+      "imageUrl": "",
+      "linkUrl": ""
+    }
+  ],
+  "imageUrl": "",
+  "linkUrl": ""
+}
+  </script>
+</body>
+</html>
