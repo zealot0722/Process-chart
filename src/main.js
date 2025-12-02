@@ -116,25 +116,50 @@ function createTextAreaField(label, name, value) {
 }
 
 function createLayoutField(value) {
-  const wrapper = document.createElement("label");
-  wrapper.textContent = "欄位版面配置";
+  const wrapper = document.createElement("fieldset");
+  wrapper.className = "layout-picker";
 
-  const select = document.createElement("select");
-  select.name = "layout";
+  const legend = document.createElement("legend");
+  legend.textContent = "欄位版面配置";
+
+  const helper = document.createElement("p");
+  helper.className = "layout-picker__hint";
+  helper.textContent = "標題固定置頂，僅調整「說明」「注意事項」的呈現方式。";
+
+  const list = document.createElement("div");
+  list.className = "layout-picker__list";
 
   layoutOptions.forEach((option) => {
-    const opt = document.createElement("option");
-    opt.value = option.value;
-    opt.textContent = option.label;
-    if (option.value === value) opt.selected = true;
-    select.append(opt);
+    const label = document.createElement("label");
+    label.className = "layout-option";
+
+    const input = document.createElement("input");
+    input.type = "radio";
+    input.name = "layout";
+    input.value = option.value;
+    input.checked = option.value === value;
+
+    const content = document.createElement("div");
+    content.className = "layout-option__body";
+
+    const title = document.createElement("div");
+    title.className = "layout-option__title";
+    title.textContent = option.label;
+
+    const desc = document.createElement("div");
+    desc.className = "layout-option__desc";
+    desc.textContent = option.description;
+
+    content.append(title, desc);
+    label.append(input, content);
+    list.append(label);
   });
 
-  wrapper.append(select);
+  wrapper.append(legend, helper, list);
   return wrapper;
 }
 
-function renderNode(node, container) {
+function renderNode(node, container, parent) {
   const element = nodeTemplate.content.firstElementChild.cloneNode(true);
   element.classList.add(`layout-${node.layout}`);
 
@@ -154,12 +179,18 @@ function renderNode(node, container) {
   badgeRow.append(createBadge(layoutLabels[node.layout] || "自訂版面"));
   content.append(badgeRow);
 
-  const titleField = createField("標題", node.title, "field--stacked");
-  const descriptionField = createField("說明", node.description);
-  const notesField = createField("注意事項", node.notes, "notes");
-  if (titleField) content.append(titleField);
-  if (descriptionField) content.append(descriptionField);
-  if (notesField) content.append(notesField);
+  const fieldsWrap = document.createElement("div");
+  fieldsWrap.className = `field-group fields-${node.layout}`;
+
+  const titleField = createField("標題", node.title, "field--stacked field--title");
+  const descriptionField = createField("說明", node.description, "field--description");
+  const notesField = createField("注意事項", node.notes, "notes field--notes");
+
+  if (titleField) fieldsWrap.append(titleField);
+  if (descriptionField) fieldsWrap.append(descriptionField);
+  if (notesField) fieldsWrap.append(notesField);
+
+  content.append(fieldsWrap);
 
   const childrenContainer = element.querySelector(".node__children");
   const formContainer = element.querySelector(".node__form");
@@ -194,13 +225,27 @@ function renderNode(node, container) {
     }
   });
 
+  const deleteBtn = element.querySelector('[data-action="delete"]');
+  if (!parent) {
+    deleteBtn.disabled = true;
+    deleteBtn.title = "根節點無法刪除";
+  }
+
+  deleteBtn.addEventListener("click", () => {
+    if (!parent) return;
+    const confirmed = window.confirm(`確定要刪除「${node.title}」嗎？`);
+    if (!confirmed) return;
+    parent.children = parent.children.filter((child) => child !== node);
+    render();
+  });
+
   if (!node.isOpen) {
     element.querySelector(".node__content").style.display = "none";
     element.querySelector(".node__children").style.display = "none";
   }
 
   if (node.children && node.children.length) {
-    node.children.forEach((child) => renderNode(child, childrenContainer));
+    node.children.forEach((child) => renderNode(child, childrenContainer, node));
   }
 
   container.append(element);
@@ -208,7 +253,7 @@ function renderNode(node, container) {
 
 function render() {
   app.innerHTML = "";
-  renderNode(processState, app);
+  renderNode(processState, app, null);
 }
 
 const processState = cloneDeep(processData);

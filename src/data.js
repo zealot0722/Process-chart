@@ -425,5 +425,14 @@ window.processData = {
 };
 
 window.layoutOptions = [
-  { value: "vertical", label: "標題 / 說明 / 注意事項 (直向)" },
+  {
+    value: "vertical",
+    label: "直向堆疊",
+    description: "說明在上、注意事項在下，保持條列分明。",
+  },
+  {
+    value: "side-notes",
+    label: "左右分欄",
+    description: "說明在左、注意事項在右，便於對照重點。",
+  },
 ];
