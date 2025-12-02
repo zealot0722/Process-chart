@@ -31,33 +31,43 @@ function createField(label, value, extraClass = "") {
   return wrapper;
 }
 
-function createMediaField(value) {
+function createImageField(value) {
   if (!value) return null;
   const wrapper = document.createElement("div");
   wrapper.className = "field field--media";
 
   const label = document.createElement("div");
   label.className = "field__label";
-  label.textContent = "圖片 / 連結";
-
-  const link = document.createElement("a");
-  link.className = "field__value link";
-  link.href = value;
-  link.target = "_blank";
-  link.rel = "noreferrer";
-  link.textContent = value;
+  label.textContent = "圖片";
 
   const preview = document.createElement("div");
   preview.className = "media-preview";
-  const isImage = /\.(png|jpe?g|gif|webp|svg)$/i.test(value);
-  if (isImage) {
-    const img = document.createElement("img");
-    img.src = value;
-    img.alt = "media";
-    preview.append(img);
-  }
+  const img = document.createElement("img");
+  img.src = value;
+  img.alt = "節點圖片";
+  preview.append(img);
 
-  wrapper.append(label, link, preview);
+  wrapper.append(label, preview);
+  return wrapper;
+}
+
+function createLinkField(value) {
+  if (!value) return null;
+  const wrapper = document.createElement("div");
+  wrapper.className = "field field--link";
+
+  const label = document.createElement("div");
+  label.className = "field__label";
+  label.textContent = "參考網址";
+
+  const anchor = document.createElement("a");
+  anchor.className = "field__value link";
+  anchor.href = value;
+  anchor.target = "_blank";
+  anchor.rel = "noreferrer";
+  anchor.textContent = value;
+
+  wrapper.append(label, anchor);
   return wrapper;
 }
 
@@ -67,19 +77,25 @@ function renderForm(node, onSubmit, onCancel) {
 
   const helper = document.createElement("p");
   helper.className = "helper-text";
-  helper.textContent = "按 Enter 保留換行，直接在欄位內更新並儲存。";
+  helper.textContent = "直接在欄位內更新內容，Enter 會保留換行。";
 
-  const grid = document.createElement("div");
-  grid.className = "form__grid";
+  const headerRow = document.createElement("div");
+  headerRow.className = "form__row";
+  headerRow.append(
+    createEditInput("標題", "title", node.title, "text"),
+    createEditInput("類型", "type", node.type || "", "text"),
+    createLayoutField(node.layout)
+  );
 
-  const titleField = createInputField("標題", "title", node.title, "text");
-  const typeField = createInputField("類型", "type", node.type || "", "text");
-  const mediaField = createInputField("圖片或網址", "media", node.media || "", "url");
-  const layoutField = createLayoutField(node.layout);
-  const descField = createTextAreaField("說明", "description", node.description || "");
-  const notesField = createTextAreaField("注意事項", "notes", node.notes || "");
+  const fieldsWrap = document.createElement("div");
+  fieldsWrap.className = `field-group fields-${node.layout} edit-fields`;
 
-  grid.append(titleField, typeField, mediaField, layoutField, descField, notesField);
+  fieldsWrap.append(
+    createEditTextArea("說明", "description", node.description || ""),
+    createEditTextArea("注意事項", "notes", node.notes || ""),
+    createEditInput("圖片網址", "image", node.image || "", "url"),
+    createEditInput("參考網址", "link", node.link || "", "url")
+  );
 
   const actions = document.createElement("div");
   actions.className = "form__actions";
@@ -96,7 +112,7 @@ function renderForm(node, onSubmit, onCancel) {
   saveButton.textContent = "儲存";
 
   actions.append(cancelButton, saveButton);
-  form.append(helper, grid, actions);
+  form.append(helper, headerRow, fieldsWrap, actions);
 
   form.addEventListener("submit", (event) => {
     event.preventDefault();
@@ -104,7 +120,8 @@ function renderForm(node, onSubmit, onCancel) {
     onSubmit({
       title: data.get("title"),
       type: data.get("type"),
-      media: data.get("media"),
+      image: data.get("image"),
+      link: data.get("link"),
       description: data.get("description"),
       notes: data.get("notes"),
       layout: data.get("layout"),
@@ -114,28 +131,37 @@ function renderForm(node, onSubmit, onCancel) {
   return form;
 }
 
-function createInputField(label, name, value, type = "text") {
+function createEditInput(label, name, value, type = "text") {
   const wrapper = document.createElement("label");
-  wrapper.className = "form-field";
-  wrapper.textContent = label;
+  wrapper.className = "form-field form-field--inline";
+
+  const title = document.createElement("div");
+  title.className = "field__label";
+  title.textContent = label;
 
   const input = document.createElement("input");
   input.name = name;
   input.type = type;
   input.value = value ?? "";
 
-  wrapper.append(input);
+  wrapper.append(title, input);
   return wrapper;
 }
 
-function createTextAreaField(label, name, value) {
+function createEditTextArea(label, name, value) {
   const wrapper = document.createElement("label");
-  wrapper.className = "form-field";
+  wrapper.className = "form-field form-field--inline";
+
+  const title = document.createElement("div");
+  title.className = "field__label";
+  title.textContent = label;
+
   const textarea = document.createElement("textarea");
   textarea.name = name;
   textarea.value = value ?? "";
   textarea.rows = 3;
-  wrapper.append(label, textarea);
+
+  wrapper.append(title, textarea);
   return wrapper;
 }
 
@@ -148,7 +174,7 @@ function createLayoutField(value) {
 
   const helper = document.createElement("p");
   helper.className = "layout-picker__hint";
-  helper.textContent = "標題固定置頂，僅調整「說明」「注意事項」的呈現方式。";
+  helper.textContent = "固定順序：標題 → 說明 → 注意事項，調整呈現比例即可。";
 
   const list = document.createElement("div");
   list.className = "layout-picker__list";
@@ -174,7 +200,17 @@ function createLayoutField(value) {
     desc.className = "layout-option__desc";
     desc.textContent = option.description;
 
-    content.append(title, desc);
+    const preview = document.createElement("div");
+    preview.className = `layout-option__preview preview-${option.value}`;
+    const descBlock = document.createElement("span");
+    descBlock.className = "preview__desc";
+    descBlock.textContent = "說明";
+    const noteBlock = document.createElement("span");
+    noteBlock.className = "preview__note";
+    noteBlock.textContent = "注意";
+    preview.append(descBlock, noteBlock);
+
+    content.append(title, desc, preview);
     label.append(input, content);
     list.append(label);
   });
@@ -215,11 +251,13 @@ function renderNode(node, container, parent, depth = 0) {
 
     const descriptionField = createField("說明", node.description, "field--description");
     const notesField = createField("注意事項", node.notes, "notes field--notes");
-    const mediaField = createMediaField(node.media);
+    const imageField = createImageField(node.image);
+    const linkField = createLinkField(node.link);
 
     if (descriptionField) fieldsWrap.append(descriptionField);
     if (notesField) fieldsWrap.append(notesField);
-    if (mediaField) fieldsWrap.append(mediaField);
+    if (imageField) fieldsWrap.append(imageField);
+    if (linkField) fieldsWrap.append(linkField);
 
     content.append(fieldsWrap);
   };

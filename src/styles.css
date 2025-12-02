@@ -15,6 +15,10 @@ body {
   background: #eef2f7;
 }
 
+.app-shell {
+  min-height: 100vh;
+}
+
 .app-header {
   padding: 1.5rem 2rem;
   background: linear-gradient(120deg, #1d4ed8, #2563eb, #60a5fa);
@@ -52,7 +56,7 @@ body {
   border: 1px solid #e2e8f0;
   border-left: 8px solid var(--accent);
   border-radius: 12px;
-  padding: 1rem 1.25rem;
+  padding: 1rem 1.25rem 1.1rem;
   margin-bottom: 1rem;
   box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
   position: relative;
@@ -66,7 +70,7 @@ body {
   align-items: center;
   flex-wrap: wrap;
   padding-bottom: 0.65rem;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px dashed #e2e8f0;
 }
 
 .node__titles h2 {
@@ -126,6 +130,11 @@ body {
   padding: 0.75rem;
 }
 
+.field--link {
+  background: #eef2ff;
+  border-color: #cbd5ff;
+}
+
 .field__label {
   font-size: 0.9rem;
   font-weight: 700;
@@ -143,6 +152,12 @@ body {
 .notes {
   background: #fdf2f8;
   border-color: #f9a8d4;
+}
+
+.field--media .field__label {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
 }
 
 .button {
@@ -194,6 +209,13 @@ body {
   gap: 0.75rem;
 }
 
+.form__row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.65rem;
+  align-items: flex-start;
+}
+
 .inline-form {
   border: 1px solid #1f2937;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
@@ -218,6 +240,10 @@ body {
   padding: 0.6rem 0.75rem;
   display: grid;
   gap: 0.4rem;
+}
+
+.form-field--inline {
+  height: 100%;
 }
 
 .form input,
@@ -282,6 +308,35 @@ body {
   gap: 0.5rem;
 }
 
+.layout-option__preview {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.35rem;
+  margin-top: 0.35rem;
+}
+
+.preview-side-notes {
+  grid-template-columns: 1.15fr 0.85fr;
+}
+
+.layout-option__preview span {
+  display: block;
+  padding: 0.35rem 0.45rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.preview__desc {
+  background: #1d4ed8;
+  color: #e0e7ff;
+}
+
+.preview__note {
+  background: #c026d3;
+  color: #f8e8ff;
+}
+
 .layout-option {
   display: flex;
   gap: 0.65rem;
@@ -325,6 +380,23 @@ body {
 
 .fields-side-notes {
   grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.85fr);
+}
+
+.edit-fields .field {
+  background: #0b1220;
+  border-color: #1f2937;
+  color: #e5e7eb;
+}
+
+.edit-fields .field__label {
+  color: #cbd5e1;
+}
+
+.edit-fields .field input,
+.edit-fields .field textarea {
+  background: #111827;
+  border: 1px solid #1f2937;
+  color: #e5e7eb;
 }
 
 .field--media {

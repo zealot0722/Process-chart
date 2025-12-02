@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Process Chart (Standalone)</title>
+    <title>Process Chart</title>
     <style>
 :root {
   color-scheme: light;
@@ -20,6 +20,10 @@
 body {
   margin: 0;
   background: #eef2f7;
+}
+
+.app-shell {
+  min-height: 100vh;
 }
 
 .app-header {
@@ -59,7 +63,7 @@ body {
   border: 1px solid #e2e8f0;
   border-left: 8px solid var(--accent);
   border-radius: 12px;
-  padding: 1rem 1.25rem;
+  padding: 1rem 1.25rem 1.1rem;
   margin-bottom: 1rem;
   box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
   position: relative;
@@ -73,7 +77,7 @@ body {
   align-items: center;
   flex-wrap: wrap;
   padding-bottom: 0.65rem;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px dashed #e2e8f0;
 }
 
 .node__titles h2 {
@@ -133,6 +137,11 @@ body {
   padding: 0.75rem;
 }
 
+.field--link {
+  background: #eef2ff;
+  border-color: #cbd5ff;
+}
+
 .field__label {
   font-size: 0.9rem;
   font-weight: 700;
@@ -150,6 +159,12 @@ body {
 .notes {
   background: #fdf2f8;
   border-color: #f9a8d4;
+}
+
+.field--media .field__label {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
 }
 
 .button {
@@ -201,6 +216,13 @@ body {
   gap: 0.75rem;
 }
 
+.form__row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.65rem;
+  align-items: flex-start;
+}
+
 .inline-form {
   border: 1px solid #1f2937;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
@@ -225,6 +247,10 @@ body {
   padding: 0.6rem 0.75rem;
   display: grid;
   gap: 0.4rem;
+}
+
+.form-field--inline {
+  height: 100%;
 }
 
 .form input,
@@ -289,6 +315,35 @@ body {
   gap: 0.5rem;
 }
 
+.layout-option__preview {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.35rem;
+  margin-top: 0.35rem;
+}
+
+.preview-side-notes {
+  grid-template-columns: 1.15fr 0.85fr;
+}
+
+.layout-option__preview span {
+  display: block;
+  padding: 0.35rem 0.45rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.preview__desc {
+  background: #1d4ed8;
+  color: #e0e7ff;
+}
+
+.preview__note {
+  background: #c026d3;
+  color: #f8e8ff;
+}
+
 .layout-option {
   display: flex;
   gap: 0.65rem;
@@ -334,6 +389,23 @@ body {
   grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.85fr);
 }
 
+.edit-fields .field {
+  background: #0b1220;
+  border-color: #1f2937;
+  color: #e5e7eb;
+}
+
+.edit-fields .field__label {
+  color: #cbd5e1;
+}
+
+.edit-fields .field input,
+.edit-fields .field textarea {
+  background: #111827;
+  border: 1px solid #1f2937;
+  color: #e5e7eb;
+}
+
 .field--media {
   background: #eef2ff;
   border-color: #c7d2fe;
@@ -360,7 +432,7 @@ body {
 
     </style>
   </head>
-  <body>
+  <body class="app-shell">
     <header class="app-header">
       <div class="branding">
         <span class="brand-icon">📦</span>
@@ -394,7 +466,8 @@ window.processData = {
     "主要處理的貨物稱為 NYR (Not Yet Receive)。\n作業分為板驗及散驗，需依商品的大小及數量去區分應使用的驗收方式。\n需要觀察當天預計到倉量、碼頭的卸貨量、未卸板數、各板貨態、移倉數量等等來決定散驗及板驗人力的配置。",
   notes:
     "驗收量需大於碼頭的卸貨量，否則會造成碼頭塞車。\n若有多餘人力，需要觀察上架的待上架商品暫存區是否有足夠的貨物可上架，並與上架 Captain 確認是否需要補貨。",
-  media: "https://dummyimage.com/800x240/1d4ed8/ffffff&text=RCV+流程概覽",
+  image: "https://dummyimage.com/800x240/1d4ed8/ffffff&text=RCV+流程概覽",
+  link: "https://example.com/rcv-overview",
   type: "role",
   isOpen: true,
   layout: "vertical",
@@ -579,7 +652,7 @@ window.processData = {
       description: "負責棧板貨物的驗收、分類與入庫作業。\n區分為廠內用 (RCRT) 與轉出專用 (GCGP/GCGT)。",
       notes:
         "【關鍵績效指標 KPI】\n• Each: HTP 300\n• Pallet: HTP 1800\n\n【一般規範】\n• 板驗人員標示請用「白色膠帶」。\n• 驗效期以「抽查四角與中間」方式進行，以防過期混貨。\n• 食品、母嬰、洗浴等與人體接觸商品，「禁止於效期處貼標」或塗改。\n\n【重量限制】\n• 一般板：800kg\n• 液體類：可至 1000kg (但轉出不得超過 800kg)",
-      media: "https://example.com/pallet-guide",
+      link: "https://example.com/pallet-guide",
       type: "process",
       isOpen: true,
       layout: "vertical",
@@ -815,18 +888,18 @@ window.processData = {
   ],
 };
 
-    window.layoutOptions = [
-      {
-        value: "vertical",
-        label: "單欄排列",
-        description: "說明在上、注意事項在下，保持條列分明。",
-      },
-      {
-        value: "side-notes",
-        label: "左右分欄",
-        description: "說明在左、注意事項在右，便於對照重點。",
-      },
-    ];
+window.layoutOptions = [
+  {
+    value: "vertical",
+    label: "單欄排列",
+    description: "說明在上、注意事項在下，保持條列分明。",
+  },
+  {
+    value: "side-notes",
+    label: "左右分欄",
+    description: "說明在左、注意事項在右，便於對照重點。",
+  },
+];
 
     </script>
     <script>
@@ -863,33 +936,43 @@ function createField(label, value, extraClass = "") {
   return wrapper;
 }
 
-function createMediaField(value) {
+function createImageField(value) {
   if (!value) return null;
   const wrapper = document.createElement("div");
   wrapper.className = "field field--media";
 
   const label = document.createElement("div");
   label.className = "field__label";
-  label.textContent = "圖片 / 連結";
-
-  const link = document.createElement("a");
-  link.className = "field__value link";
-  link.href = value;
-  link.target = "_blank";
-  link.rel = "noreferrer";
-  link.textContent = value;
+  label.textContent = "圖片";
 
   const preview = document.createElement("div");
   preview.className = "media-preview";
-  const isImage = /\.(png|jpe?g|gif|webp|svg)$/i.test(value);
-  if (isImage) {
-    const img = document.createElement("img");
-    img.src = value;
-    img.alt = "media";
-    preview.append(img);
-  }
+  const img = document.createElement("img");
+  img.src = value;
+  img.alt = "節點圖片";
+  preview.append(img);
 
-  wrapper.append(label, link, preview);
+  wrapper.append(label, preview);
+  return wrapper;
+}
+
+function createLinkField(value) {
+  if (!value) return null;
+  const wrapper = document.createElement("div");
+  wrapper.className = "field field--link";
+
+  const label = document.createElement("div");
+  label.className = "field__label";
+  label.textContent = "參考網址";
+
+  const anchor = document.createElement("a");
+  anchor.className = "field__value link";
+  anchor.href = value;
+  anchor.target = "_blank";
+  anchor.rel = "noreferrer";
+  anchor.textContent = value;
+
+  wrapper.append(label, anchor);
   return wrapper;
 }
 
@@ -899,19 +982,25 @@ function renderForm(node, onSubmit, onCancel) {
 
   const helper = document.createElement("p");
   helper.className = "helper-text";
-  helper.textContent = "按 Enter 保留換行，直接在欄位內更新並儲存。";
+  helper.textContent = "直接在欄位內更新內容，Enter 會保留換行。";
 
-  const grid = document.createElement("div");
-  grid.className = "form__grid";
+  const headerRow = document.createElement("div");
+  headerRow.className = "form__row";
+  headerRow.append(
+    createEditInput("標題", "title", node.title, "text"),
+    createEditInput("類型", "type", node.type || "", "text"),
+    createLayoutField(node.layout)
+  );
 
-  const titleField = createInputField("標題", "title", node.title, "text");
-  const typeField = createInputField("類型", "type", node.type || "", "text");
-  const mediaField = createInputField("圖片或網址", "media", node.media || "", "url");
-  const layoutField = createLayoutField(node.layout);
-  const descField = createTextAreaField("說明", "description", node.description || "");
-  const notesField = createTextAreaField("注意事項", "notes", node.notes || "");
+  const fieldsWrap = document.createElement("div");
+  fieldsWrap.className = `field-group fields-${node.layout} edit-fields`;
 
-  grid.append(titleField, typeField, mediaField, layoutField, descField, notesField);
+  fieldsWrap.append(
+    createEditTextArea("說明", "description", node.description || ""),
+    createEditTextArea("注意事項", "notes", node.notes || ""),
+    createEditInput("圖片網址", "image", node.image || "", "url"),
+    createEditInput("參考網址", "link", node.link || "", "url")
+  );
 
   const actions = document.createElement("div");
   actions.className = "form__actions";
@@ -928,7 +1017,7 @@ function renderForm(node, onSubmit, onCancel) {
   saveButton.textContent = "儲存";
 
   actions.append(cancelButton, saveButton);
-  form.append(helper, grid, actions);
+  form.append(helper, headerRow, fieldsWrap, actions);
 
   form.addEventListener("submit", (event) => {
     event.preventDefault();
@@ -936,7 +1025,8 @@ function renderForm(node, onSubmit, onCancel) {
     onSubmit({
       title: data.get("title"),
       type: data.get("type"),
-      media: data.get("media"),
+      image: data.get("image"),
+      link: data.get("link"),
       description: data.get("description"),
       notes: data.get("notes"),
       layout: data.get("layout"),
@@ -946,28 +1036,37 @@ function renderForm(node, onSubmit, onCancel) {
   return form;
 }
 
-function createInputField(label, name, value, type = "text") {
+function createEditInput(label, name, value, type = "text") {
   const wrapper = document.createElement("label");
-  wrapper.className = "form-field";
-  wrapper.textContent = label;
+  wrapper.className = "form-field form-field--inline";
+
+  const title = document.createElement("div");
+  title.className = "field__label";
+  title.textContent = label;
 
   const input = document.createElement("input");
   input.name = name;
   input.type = type;
   input.value = value ?? "";
 
-  wrapper.append(input);
+  wrapper.append(title, input);
   return wrapper;
 }
 
-function createTextAreaField(label, name, value) {
+function createEditTextArea(label, name, value) {
   const wrapper = document.createElement("label");
-  wrapper.className = "form-field";
+  wrapper.className = "form-field form-field--inline";
+
+  const title = document.createElement("div");
+  title.className = "field__label";
+  title.textContent = label;
+
   const textarea = document.createElement("textarea");
   textarea.name = name;
   textarea.value = value ?? "";
   textarea.rows = 3;
-  wrapper.append(label, textarea);
+
+  wrapper.append(title, textarea);
   return wrapper;
 }
 
@@ -980,7 +1079,7 @@ function createLayoutField(value) {
 
   const helper = document.createElement("p");
   helper.className = "layout-picker__hint";
-  helper.textContent = "標題固定置頂，僅調整「說明」「注意事項」的呈現方式。";
+  helper.textContent = "固定順序：標題 → 說明 → 注意事項，調整呈現比例即可。";
 
   const list = document.createElement("div");
   list.className = "layout-picker__list";
@@ -1006,7 +1105,17 @@ function createLayoutField(value) {
     desc.className = "layout-option__desc";
     desc.textContent = option.description;
 
-    content.append(title, desc);
+    const preview = document.createElement("div");
+    preview.className = `layout-option__preview preview-${option.value}`;
+    const descBlock = document.createElement("span");
+    descBlock.className = "preview__desc";
+    descBlock.textContent = "說明";
+    const noteBlock = document.createElement("span");
+    noteBlock.className = "preview__note";
+    noteBlock.textContent = "注意";
+    preview.append(descBlock, noteBlock);
+
+    content.append(title, desc, preview);
     label.append(input, content);
     list.append(label);
   });
@@ -1047,11 +1156,13 @@ function renderNode(node, container, parent, depth = 0) {
 
     const descriptionField = createField("說明", node.description, "field--description");
     const notesField = createField("注意事項", node.notes, "notes field--notes");
-    const mediaField = createMediaField(node.media);
+    const imageField = createImageField(node.image);
+    const linkField = createLinkField(node.link);
 
     if (descriptionField) fieldsWrap.append(descriptionField);
     if (notesField) fieldsWrap.append(notesField);
-    if (mediaField) fieldsWrap.append(mediaField);
+    if (imageField) fieldsWrap.append(imageField);
+    if (linkField) fieldsWrap.append(linkField);
 
     content.append(fieldsWrap);
   };
@@ -1081,6 +1192,7 @@ function renderNode(node, container, parent, depth = 0) {
   });
 
   const editBtn = element.querySelector('[data-action="edit"]');
+
   editBtn.addEventListener("click", () => {
     isEditing = !isEditing;
     if (isEditing) {
