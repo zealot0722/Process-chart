@@ -54,6 +54,7 @@ body {
 
 .node {
   --accent: #cbd5e1;
+  --indent: 0px;
   background: #fff;
   border: 1px solid #e2e8f0;
   border-left: 8px solid var(--accent);
@@ -61,6 +62,8 @@ body {
   padding: 1rem 1.25rem;
   margin-bottom: 1rem;
   box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+  position: relative;
+  margin-left: var(--indent);
 }
 
 .node__header {
@@ -89,6 +92,21 @@ body {
   background: #f8fafc;
 }
 
+.node::before {
+  content: "";
+  position: absolute;
+  left: -14px;
+  top: 0.85rem;
+  bottom: 0.85rem;
+  width: 2px;
+  background: linear-gradient(#e2e8f0, #e2e8f0);
+  opacity: 0.85;
+}
+
+.node[data-depth="0"]::before {
+  display: none;
+}
+
 .node__actions {
   display: flex;
   gap: 0.5rem;
@@ -98,14 +116,14 @@ body {
 .node__content {
   margin: 0.75rem 0 0.25rem;
   display: grid;
-  gap: 0.75rem;
+  gap: 0.85rem;
   grid-template-columns: 1fr;
 }
 
 .node__children {
   margin-top: 0.75rem;
-  padding-left: 0.5rem;
-  border-left: 3px solid #e2e8f0;
+  display: grid;
+  gap: 0.5rem;
 }
 
 .field {
@@ -178,9 +196,14 @@ body {
   color: #e2e8f0;
   padding: 1rem;
   border-radius: 12px;
-  margin-top: 0.75rem;
+  margin-top: 0.25rem;
   display: grid;
   gap: 0.75rem;
+}
+
+.inline-form {
+  border: 1px solid #1f2937;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .form__grid {
@@ -193,6 +216,15 @@ body {
   font-weight: 700;
   display: block;
   margin-bottom: 0.3rem;
+}
+
+.form-field {
+  background: #0b1220;
+  border: 1px solid #1f2937;
+  border-radius: 10px;
+  padding: 0.6rem 0.75rem;
+  display: grid;
+  gap: 0.4rem;
 }
 
 .form input,
@@ -211,6 +243,12 @@ body {
 .form textarea {
   min-height: 84px;
   resize: vertical;
+}
+
+.form textarea:focus,
+.form input:focus {
+  outline: 2px solid #2563eb;
+  border-color: #2563eb;
 }
 
 .form__actions {
@@ -296,6 +334,30 @@ body {
   grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.85fr);
 }
 
+.field--media {
+  background: #eef2ff;
+  border-color: #c7d2fe;
+}
+
+.field__value.link {
+  color: #2563eb;
+  word-break: break-all;
+}
+
+.media-preview {
+  margin-top: 0.5rem;
+  background: #fff;
+  border: 1px dashed #cbd5e1;
+  border-radius: 10px;
+  padding: 0.5rem;
+}
+
+.media-preview img {
+  max-width: 100%;
+  display: block;
+  border-radius: 8px;
+}
+
     </style>
   </head>
   <body>
@@ -321,7 +383,6 @@ body {
           </div>
         </div>
         <div class="node__content"></div>
-        <div class="node__form"></div>
         <div class="node__children"></div>
       </section>
     </template>
@@ -333,6 +394,7 @@ window.processData = {
     "主要處理的貨物稱為 NYR (Not Yet Receive)。\n作業分為板驗及散驗，需依商品的大小及數量去區分應使用的驗收方式。\n需要觀察當天預計到倉量、碼頭的卸貨量、未卸板數、各板貨態、移倉數量等等來決定散驗及板驗人力的配置。",
   notes:
     "驗收量需大於碼頭的卸貨量，否則會造成碼頭塞車。\n若有多餘人力，需要觀察上架的待上架商品暫存區是否有足夠的貨物可上架，並與上架 Captain 確認是否需要補貨。",
+  media: "https://dummyimage.com/800x240/1d4ed8/ffffff&text=RCV+流程概覽",
   type: "role",
   isOpen: true,
   layout: "vertical",
@@ -517,6 +579,7 @@ window.processData = {
       description: "負責棧板貨物的驗收、分類與入庫作業。\n區分為廠內用 (RCRT) 與轉出專用 (GCGP/GCGT)。",
       notes:
         "【關鍵績效指標 KPI】\n• Each: HTP 300\n• Pallet: HTP 1800\n\n【一般規範】\n• 板驗人員標示請用「白色膠帶」。\n• 驗效期以「抽查四角與中間」方式進行，以防過期混貨。\n• 食品、母嬰、洗浴等與人體接觸商品，「禁止於效期處貼標」或塗改。\n\n【重量限制】\n• 一般板：800kg\n• 液體類：可至 1000kg (但轉出不得超過 800kg)",
+      media: "https://example.com/pallet-guide",
       type: "process",
       isOpen: true,
       layout: "vertical",
@@ -762,8 +825,8 @@ window.processData = {
         value: "side-notes",
         label: "左右分欄",
         description: "說明在左、注意事項在右，便於對照重點。",
-  },
-];
+      },
+    ];
 
     </script>
     <script>
@@ -800,24 +863,55 @@ function createField(label, value, extraClass = "") {
   return wrapper;
 }
 
+function createMediaField(value) {
+  if (!value) return null;
+  const wrapper = document.createElement("div");
+  wrapper.className = "field field--media";
+
+  const label = document.createElement("div");
+  label.className = "field__label";
+  label.textContent = "圖片 / 連結";
+
+  const link = document.createElement("a");
+  link.className = "field__value link";
+  link.href = value;
+  link.target = "_blank";
+  link.rel = "noreferrer";
+  link.textContent = value;
+
+  const preview = document.createElement("div");
+  preview.className = "media-preview";
+  const isImage = /\.(png|jpe?g|gif|webp|svg)$/i.test(value);
+  if (isImage) {
+    const img = document.createElement("img");
+    img.src = value;
+    img.alt = "media";
+    preview.append(img);
+  }
+
+  wrapper.append(label, link, preview);
+  return wrapper;
+}
+
 function renderForm(node, onSubmit, onCancel) {
   const form = document.createElement("form");
-  form.className = "form";
+  form.className = "form inline-form";
 
   const helper = document.createElement("p");
   helper.className = "helper-text";
-  helper.textContent = "按 Enter 會留下換行，預覽時會依版面配置正確分行。";
+  helper.textContent = "按 Enter 保留換行，直接在欄位內更新並儲存。";
 
   const grid = document.createElement("div");
   grid.className = "form__grid";
 
   const titleField = createInputField("標題", "title", node.title, "text");
   const typeField = createInputField("類型", "type", node.type || "", "text");
+  const mediaField = createInputField("圖片或網址", "media", node.media || "", "url");
   const layoutField = createLayoutField(node.layout);
   const descField = createTextAreaField("說明", "description", node.description || "");
   const notesField = createTextAreaField("注意事項", "notes", node.notes || "");
 
-  grid.append(titleField, typeField, layoutField, descField, notesField);
+  grid.append(titleField, typeField, mediaField, layoutField, descField, notesField);
 
   const actions = document.createElement("div");
   actions.className = "form__actions";
@@ -842,6 +936,7 @@ function renderForm(node, onSubmit, onCancel) {
     onSubmit({
       title: data.get("title"),
       type: data.get("type"),
+      media: data.get("media"),
       description: data.get("description"),
       notes: data.get("notes"),
       layout: data.get("layout"),
@@ -853,6 +948,7 @@ function renderForm(node, onSubmit, onCancel) {
 
 function createInputField(label, name, value, type = "text") {
   const wrapper = document.createElement("label");
+  wrapper.className = "form-field";
   wrapper.textContent = label;
 
   const input = document.createElement("input");
@@ -866,6 +962,7 @@ function createInputField(label, name, value, type = "text") {
 
 function createTextAreaField(label, name, value) {
   const wrapper = document.createElement("label");
+  wrapper.className = "form-field";
   const textarea = document.createElement("textarea");
   textarea.name = name;
   textarea.value = value ?? "";
@@ -926,6 +1023,7 @@ function renderNode(node, container, parent, depth = 0) {
   const element = nodeTemplate.content.firstElementChild.cloneNode(true);
   element.classList.add(`layout-${node.layout}`);
   element.style.setProperty("--accent", getAccent(depth));
+  element.style.setProperty("--indent", `${depth * 18}px`);
   element.dataset.depth = depth;
 
   const titleEl = element.querySelector(".node__title");
@@ -938,32 +1036,29 @@ function renderNode(node, container, parent, depth = 0) {
   toggleBtn.textContent = node.isOpen ? "收合" : "展開";
 
   const content = element.querySelector(".node__content");
-
-  const fieldsWrap = document.createElement("div");
-  fieldsWrap.className = `field-group fields-${node.layout}`;
-
-  const descriptionField = createField("說明", node.description, "field--description");
-  const notesField = createField("注意事項", node.notes, "notes field--notes");
-
-  if (descriptionField) fieldsWrap.append(descriptionField);
-  if (notesField) fieldsWrap.append(notesField);
-
-  content.append(fieldsWrap);
-
   const childrenContainer = element.querySelector(".node__children");
-  const formContainer = element.querySelector(".node__form");
 
-  toggleBtn.addEventListener("click", () => {
-    node.isOpen = !node.isOpen;
-    render();
-  });
-
-  const editBtn = element.querySelector('[data-action="edit"]');
   let isEditing = false;
+
+  const renderDisplayContent = () => {
+    content.innerHTML = "";
+    const fieldsWrap = document.createElement("div");
+    fieldsWrap.className = `field-group fields-${node.layout}`;
+
+    const descriptionField = createField("說明", node.description, "field--description");
+    const notesField = createField("注意事項", node.notes, "notes field--notes");
+    const mediaField = createMediaField(node.media);
+
+    if (descriptionField) fieldsWrap.append(descriptionField);
+    if (notesField) fieldsWrap.append(notesField);
+    if (mediaField) fieldsWrap.append(mediaField);
+
+    content.append(fieldsWrap);
+  };
 
   const cancelForm = () => {
     isEditing = false;
-    formContainer.innerHTML = "";
+    render();
   };
 
   const submitForm = (updates) => {
@@ -972,14 +1067,26 @@ function renderNode(node, container, parent, depth = 0) {
     render();
   };
 
+  const renderEditContent = () => {
+    content.innerHTML = "";
+    const form = renderForm(node, submitForm, cancelForm);
+    content.append(form);
+  };
+
+  renderDisplayContent();
+
+  toggleBtn.addEventListener("click", () => {
+    node.isOpen = !node.isOpen;
+    render();
+  });
+
+  const editBtn = element.querySelector('[data-action="edit"]');
   editBtn.addEventListener("click", () => {
     isEditing = !isEditing;
     if (isEditing) {
-      const form = renderForm(node, submitForm, cancelForm);
-      formContainer.innerHTML = "";
-      formContainer.append(form);
+      renderEditContent();
     } else {
-      cancelForm();
+      renderDisplayContent();
     }
   });
 

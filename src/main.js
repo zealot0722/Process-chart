@@ -31,24 +31,55 @@ function createField(label, value, extraClass = "") {
   return wrapper;
 }
 
+function createMediaField(value) {
+  if (!value) return null;
+  const wrapper = document.createElement("div");
+  wrapper.className = "field field--media";
+
+  const label = document.createElement("div");
+  label.className = "field__label";
+  label.textContent = "圖片 / 連結";
+
+  const link = document.createElement("a");
+  link.className = "field__value link";
+  link.href = value;
+  link.target = "_blank";
+  link.rel = "noreferrer";
+  link.textContent = value;
+
+  const preview = document.createElement("div");
+  preview.className = "media-preview";
+  const isImage = /\.(png|jpe?g|gif|webp|svg)$/i.test(value);
+  if (isImage) {
+    const img = document.createElement("img");
+    img.src = value;
+    img.alt = "media";
+    preview.append(img);
+  }
+
+  wrapper.append(label, link, preview);
+  return wrapper;
+}
+
 function renderForm(node, onSubmit, onCancel) {
   const form = document.createElement("form");
-  form.className = "form";
+  form.className = "form inline-form";
 
   const helper = document.createElement("p");
   helper.className = "helper-text";
-  helper.textContent = "按 Enter 會留下換行，預覽時會依版面配置正確分行。";
+  helper.textContent = "按 Enter 保留換行，直接在欄位內更新並儲存。";
 
   const grid = document.createElement("div");
   grid.className = "form__grid";
 
   const titleField = createInputField("標題", "title", node.title, "text");
   const typeField = createInputField("類型", "type", node.type || "", "text");
+  const mediaField = createInputField("圖片或網址", "media", node.media || "", "url");
   const layoutField = createLayoutField(node.layout);
   const descField = createTextAreaField("說明", "description", node.description || "");
   const notesField = createTextAreaField("注意事項", "notes", node.notes || "");
 
-  grid.append(titleField, typeField, layoutField, descField, notesField);
+  grid.append(titleField, typeField, mediaField, layoutField, descField, notesField);
 
   const actions = document.createElement("div");
   actions.className = "form__actions";
@@ -73,6 +104,7 @@ function renderForm(node, onSubmit, onCancel) {
     onSubmit({
       title: data.get("title"),
       type: data.get("type"),
+      media: data.get("media"),
       description: data.get("description"),
       notes: data.get("notes"),
       layout: data.get("layout"),
@@ -84,6 +116,7 @@ function renderForm(node, onSubmit, onCancel) {
 
 function createInputField(label, name, value, type = "text") {
   const wrapper = document.createElement("label");
+  wrapper.className = "form-field";
   wrapper.textContent = label;
 
   const input = document.createElement("input");
@@ -97,6 +130,7 @@ function createInputField(label, name, value, type = "text") {
 
 function createTextAreaField(label, name, value) {
   const wrapper = document.createElement("label");
+  wrapper.className = "form-field";
   const textarea = document.createElement("textarea");
   textarea.name = name;
   textarea.value = value ?? "";
@@ -157,6 +191,7 @@ function renderNode(node, container, parent, depth = 0) {
   const element = nodeTemplate.content.firstElementChild.cloneNode(true);
   element.classList.add(`layout-${node.layout}`);
   element.style.setProperty("--accent", getAccent(depth));
+  element.style.setProperty("--indent", `${depth * 18}px`);
   element.dataset.depth = depth;
 
   const titleEl = element.querySelector(".node__title");
@@ -169,32 +204,29 @@ function renderNode(node, container, parent, depth = 0) {
   toggleBtn.textContent = node.isOpen ? "收合" : "展開";
 
   const content = element.querySelector(".node__content");
-
-  const fieldsWrap = document.createElement("div");
-  fieldsWrap.className = `field-group fields-${node.layout}`;
-
-  const descriptionField = createField("說明", node.description, "field--description");
-  const notesField = createField("注意事項", node.notes, "notes field--notes");
-
-  if (descriptionField) fieldsWrap.append(descriptionField);
-  if (notesField) fieldsWrap.append(notesField);
-
-  content.append(fieldsWrap);
-
   const childrenContainer = element.querySelector(".node__children");
-  const formContainer = element.querySelector(".node__form");
 
-  toggleBtn.addEventListener("click", () => {
-    node.isOpen = !node.isOpen;
-    render();
-  });
-
-  const editBtn = element.querySelector('[data-action="edit"]');
   let isEditing = false;
+
+  const renderDisplayContent = () => {
+    content.innerHTML = "";
+    const fieldsWrap = document.createElement("div");
+    fieldsWrap.className = `field-group fields-${node.layout}`;
+
+    const descriptionField = createField("說明", node.description, "field--description");
+    const notesField = createField("注意事項", node.notes, "notes field--notes");
+    const mediaField = createMediaField(node.media);
+
+    if (descriptionField) fieldsWrap.append(descriptionField);
+    if (notesField) fieldsWrap.append(notesField);
+    if (mediaField) fieldsWrap.append(mediaField);
+
+    content.append(fieldsWrap);
+  };
 
   const cancelForm = () => {
     isEditing = false;
-    formContainer.innerHTML = "";
+    render();
   };
 
   const submitForm = (updates) => {
@@ -203,14 +235,27 @@ function renderNode(node, container, parent, depth = 0) {
     render();
   };
 
+  const renderEditContent = () => {
+    content.innerHTML = "";
+    const form = renderForm(node, submitForm, cancelForm);
+    content.append(form);
+  };
+
+  renderDisplayContent();
+
+  toggleBtn.addEventListener("click", () => {
+    node.isOpen = !node.isOpen;
+    render();
+  });
+
+  const editBtn = element.querySelector('[data-action="edit"]');
+
   editBtn.addEventListener("click", () => {
     isEditing = !isEditing;
     if (isEditing) {
-      const form = renderForm(node, submitForm, cancelForm);
-      formContainer.innerHTML = "";
-      formContainer.append(form);
+      renderEditContent();
     } else {
-      cancelForm();
+      renderDisplayContent();
     }
   });
 
