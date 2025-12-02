@@ -14,3 +14,7 @@ A lightweight client-side editor for the receiving station process tree. Open `i
 python -m http.server 4173
 # 然後在瀏覽器開啟 http://localhost:4173
 ```
+
+## 在 GitHub 上瀏覽
+- 直接於 GitHub 介面點選 `index.html` 後選擇「View Raw」即可載入完整頁面（所有腳本皆為相對路徑，不需額外設定）。
+- 若要發布 GitHub Pages，可在專案設定中啟用 Pages 並指定根目錄，即可透過 `https://<your-account>.github.io/Process-chart/` 瀏覽。
