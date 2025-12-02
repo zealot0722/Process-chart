@@ -5,8 +5,8 @@ window.processData = {
     "主要處理的貨物稱為 NYR (Not Yet Receive)。\n作業分為板驗及散驗，需依商品的大小及數量去區分應使用的驗收方式。\n需要觀察當天預計到倉量、碼頭的卸貨量、未卸板數、各板貨態、移倉數量等等來決定散驗及板驗人力的配置。",
   notes:
     "驗收量需大於碼頭的卸貨量，否則會造成碼頭塞車。\n若有多餘人力，需要觀察上架的待上架商品暫存區是否有足夠的貨物可上架，並與上架 Captain 確認是否需要補貨。",
-  image: "https://dummyimage.com/800x240/1d4ed8/ffffff&text=RCV+流程概覽",
-  link: "https://example.com/rcv-overview",
+  images: ["https://dummyimage.com/800x240/1d4ed8/ffffff&text=RCV+流程概覽"],
+  links: ["https://example.com/rcv-overview"],
   type: "role",
   isOpen: true,
   layout: "vertical",
@@ -191,7 +191,7 @@ window.processData = {
       description: "負責棧板貨物的驗收、分類與入庫作業。\n區分為廠內用 (RCRT) 與轉出專用 (GCGP/GCGT)。",
       notes:
         "【關鍵績效指標 KPI】\n• Each: HTP 300\n• Pallet: HTP 1800\n\n【一般規範】\n• 板驗人員標示請用「白色膠帶」。\n• 驗效期以「抽查四角與中間」方式進行，以防過期混貨。\n• 食品、母嬰、洗浴等與人體接觸商品，「禁止於效期處貼標」或塗改。\n\n【重量限制】\n• 一般板：800kg\n• 液體類：可至 1000kg (但轉出不得超過 800kg)",
-      link: "https://example.com/pallet-guide",
+      links: ["https://example.com/pallet-guide"],
       type: "process",
       isOpen: true,
       layout: "vertical",

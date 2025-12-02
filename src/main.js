@@ -11,216 +11,153 @@ function cloneDeep(node) {
 
 function applyLayoutDefaults(node) {
   if (!node.layout) node.layout = "vertical";
+  if (!node.images) node.images = [];
+  if (!node.links) node.links = [];
   node.children?.forEach(applyLayoutDefaults);
-}
-
-function createField(label, value, extraClass = "") {
-  if (!value) return null;
-  const wrapper = document.createElement("div");
-  wrapper.className = `field ${extraClass}`;
-
-  const title = document.createElement("div");
-  title.className = "field__label";
-  title.textContent = label;
-
-  const content = document.createElement("p");
-  content.className = "field__value";
-  content.textContent = value;
-
-  wrapper.append(title, content);
-  return wrapper;
-}
-
-function createImageField(value) {
-  if (!value) return null;
-  const wrapper = document.createElement("div");
-  wrapper.className = "field field--media";
-
-  const label = document.createElement("div");
-  label.className = "field__label";
-  label.textContent = "圖片";
-
-  const preview = document.createElement("div");
-  preview.className = "media-preview";
-  const img = document.createElement("img");
-  img.src = value;
-  img.alt = "節點圖片";
-  preview.append(img);
-
-  wrapper.append(label, preview);
-  return wrapper;
-}
-
-function createLinkField(value) {
-  if (!value) return null;
-  const wrapper = document.createElement("div");
-  wrapper.className = "field field--link";
-
-  const label = document.createElement("div");
-  label.className = "field__label";
-  label.textContent = "參考網址";
-
-  const anchor = document.createElement("a");
-  anchor.className = "field__value link";
-  anchor.href = value;
-  anchor.target = "_blank";
-  anchor.rel = "noreferrer";
-  anchor.textContent = value;
-
-  wrapper.append(label, anchor);
-  return wrapper;
-}
-
-function renderForm(node, onSubmit, onCancel) {
-  const form = document.createElement("form");
-  form.className = "form inline-form";
-
-  const helper = document.createElement("p");
-  helper.className = "helper-text";
-  helper.textContent = "直接在欄位內更新內容，Enter 會保留換行。";
-
-  const headerRow = document.createElement("div");
-  headerRow.className = "form__row";
-  headerRow.append(
-    createEditInput("標題", "title", node.title, "text"),
-    createEditInput("類型", "type", node.type || "", "text"),
-    createLayoutField(node.layout)
-  );
-
-  const fieldsWrap = document.createElement("div");
-  fieldsWrap.className = `field-group fields-${node.layout} edit-fields`;
-
-  fieldsWrap.append(
-    createEditTextArea("說明", "description", node.description || ""),
-    createEditTextArea("注意事項", "notes", node.notes || ""),
-    createEditInput("圖片網址", "image", node.image || "", "url"),
-    createEditInput("參考網址", "link", node.link || "", "url")
-  );
-
-  const actions = document.createElement("div");
-  actions.className = "form__actions";
-
-  const cancelButton = document.createElement("button");
-  cancelButton.type = "button";
-  cancelButton.className = "button button--secondary";
-  cancelButton.textContent = "取消";
-  cancelButton.addEventListener("click", onCancel);
-
-  const saveButton = document.createElement("button");
-  saveButton.type = "submit";
-  saveButton.className = "button button--primary";
-  saveButton.textContent = "儲存";
-
-  actions.append(cancelButton, saveButton);
-  form.append(helper, headerRow, fieldsWrap, actions);
-
-  form.addEventListener("submit", (event) => {
-    event.preventDefault();
-    const data = new FormData(form);
-    onSubmit({
-      title: data.get("title"),
-      type: data.get("type"),
-      image: data.get("image"),
-      link: data.get("link"),
-      description: data.get("description"),
-      notes: data.get("notes"),
-      layout: data.get("layout"),
-    });
-  });
-
-  return form;
-}
-
-function createEditInput(label, name, value, type = "text") {
-  const wrapper = document.createElement("label");
-  wrapper.className = "form-field form-field--inline";
-
-  const title = document.createElement("div");
-  title.className = "field__label";
-  title.textContent = label;
-
-  const input = document.createElement("input");
-  input.name = name;
-  input.type = type;
-  input.value = value ?? "";
-
-  wrapper.append(title, input);
-  return wrapper;
-}
-
-function createEditTextArea(label, name, value) {
-  const wrapper = document.createElement("label");
-  wrapper.className = "form-field form-field--inline";
-
-  const title = document.createElement("div");
-  title.className = "field__label";
-  title.textContent = label;
-
-  const textarea = document.createElement("textarea");
-  textarea.name = name;
-  textarea.value = value ?? "";
-  textarea.rows = 3;
-
-  wrapper.append(title, textarea);
-  return wrapper;
-}
-
-function createLayoutField(value) {
-  const wrapper = document.createElement("fieldset");
-  wrapper.className = "layout-picker";
-
-  const legend = document.createElement("legend");
-  legend.textContent = "欄位版面配置";
-
-  const helper = document.createElement("p");
-  helper.className = "layout-picker__hint";
-  helper.textContent = "固定順序：標題 → 說明 → 注意事項，調整呈現比例即可。";
-
-  const list = document.createElement("div");
-  list.className = "layout-picker__list";
-
-  layoutOptions.forEach((option) => {
-    const label = document.createElement("label");
-    label.className = "layout-option";
-
-    const input = document.createElement("input");
-    input.type = "radio";
-    input.name = "layout";
-    input.value = option.value;
-    input.checked = option.value === value;
-
-    const content = document.createElement("div");
-    content.className = "layout-option__body";
-
-    const title = document.createElement("div");
-    title.className = "layout-option__title";
-    title.textContent = option.label;
-
-    const desc = document.createElement("div");
-    desc.className = "layout-option__desc";
-    desc.textContent = option.description;
-
-    const preview = document.createElement("div");
-    preview.className = `layout-option__preview preview-${option.value}`;
-    const descBlock = document.createElement("span");
-    descBlock.className = "preview__desc";
-    descBlock.textContent = "說明";
-    const noteBlock = document.createElement("span");
-    noteBlock.className = "preview__note";
-    noteBlock.textContent = "注意";
-    preview.append(descBlock, noteBlock);
-
-    content.append(title, desc, preview);
-    label.append(input, content);
-    list.append(label);
-  });
-
-  wrapper.append(legend, helper, list);
-  return wrapper;
 }
 
 function getAccent(depth) {
   return accentPalette[depth % accentPalette.length];
+}
+
+function createEditableText(label, value, onChange, options = {}) {
+  const { multiline = false, placeholder = "" } = options;
+  const wrapper = document.createElement("div");
+  wrapper.className = "field field--editable";
+
+  const header = document.createElement("div");
+  header.className = "field__header";
+  const lbl = document.createElement("div");
+  lbl.className = "field__label";
+  lbl.textContent = label;
+  const hint = document.createElement("span");
+  hint.className = "field__hint";
+  hint.textContent = "可直接編輯";
+  header.append(lbl, hint);
+
+  const inputEl = multiline ? document.createElement("textarea") : document.createElement("input");
+  inputEl.value = value || "";
+  inputEl.placeholder = placeholder;
+  inputEl.className = "inline-input";
+  if (multiline) {
+    inputEl.rows = 3;
+  }
+
+  inputEl.addEventListener("input", (event) => {
+    onChange(event.target.value);
+  });
+
+  wrapper.append(header, inputEl);
+  return wrapper;
+}
+
+function createLayoutSelector(node) {
+  const wrapper = document.createElement("div");
+  wrapper.className = "field field--layout";
+
+  const header = document.createElement("div");
+  header.className = "field__header";
+  const label = document.createElement("div");
+  label.className = "field__label";
+  label.textContent = "欄位版面配置";
+  header.append(label);
+
+  const select = document.createElement("select");
+  select.className = "inline-select";
+
+  layoutOptions.forEach((option) => {
+    const opt = document.createElement("option");
+    opt.value = option.value;
+    opt.textContent = `${option.label} — ${option.description}`;
+    if (node.layout === option.value) opt.selected = true;
+    select.append(opt);
+  });
+
+  select.addEventListener("change", (event) => {
+    node.layout = event.target.value;
+    render();
+  });
+
+  wrapper.append(header, select);
+  return wrapper;
+}
+
+function createListField(label, items, onAdd, onUpdate, onRemove, options = {}) {
+  const { type = "link" } = options;
+  const wrapper = document.createElement("div");
+  wrapper.className = `field field--editable field--list field--${type}`;
+
+  const header = document.createElement("div");
+  header.className = "field__header";
+  const lbl = document.createElement("div");
+  lbl.className = "field__label";
+  lbl.textContent = label;
+
+  const addBtn = document.createElement("button");
+  addBtn.type = "button";
+  addBtn.className = "icon-button icon-button--add";
+  addBtn.title = `新增${label}`;
+  addBtn.textContent = "+";
+  addBtn.addEventListener("click", onAdd);
+
+  header.append(lbl, addBtn);
+  wrapper.append(header);
+
+  const list = document.createElement("div");
+  list.className = "field-list";
+
+  items.forEach((value, index) => {
+    const itemRow = document.createElement("div");
+    itemRow.className = "field-list__item";
+
+    const input = document.createElement("input");
+    input.type = "url";
+    input.value = value || "";
+    input.placeholder = type === "image" ? "https://... (圖片網址)" : "https://... (參考網址)";
+    input.className = "inline-input";
+
+    input.addEventListener("input", (event) => {
+      onUpdate(index, event.target.value);
+    });
+
+    const controls = document.createElement("div");
+    controls.className = "field-list__controls";
+
+    const removeBtn = document.createElement("button");
+    removeBtn.type = "button";
+    removeBtn.className = "icon-button icon-button--remove";
+    removeBtn.title = "刪除欄位";
+    removeBtn.textContent = "×";
+    removeBtn.addEventListener("click", () => onRemove(index));
+
+    controls.append(removeBtn);
+    itemRow.append(input, controls);
+
+    if (type === "image" && value) {
+      const preview = document.createElement("div");
+      preview.className = "media-preview";
+      const img = document.createElement("img");
+      img.src = value;
+      img.alt = "圖片預覽";
+      preview.append(img);
+      itemRow.append(preview);
+    }
+
+    if (type === "link" && value) {
+      const previewLink = document.createElement("a");
+      previewLink.href = value;
+      previewLink.target = "_blank";
+      previewLink.rel = "noreferrer";
+      previewLink.className = "link-preview";
+      previewLink.textContent = value;
+      itemRow.append(previewLink);
+    }
+
+    list.append(itemRow);
+  });
+
+  wrapper.append(list);
+  return wrapper;
 }
 
 function renderNode(node, container, parent, depth = 0) {
@@ -232,9 +169,19 @@ function renderNode(node, container, parent, depth = 0) {
 
   const titleEl = element.querySelector(".node__title");
   titleEl.textContent = node.title;
+  titleEl.contentEditable = true;
+  titleEl.spellcheck = false;
+  titleEl.addEventListener("input", (event) => {
+    node.title = event.target.textContent;
+  });
 
   const typeEl = element.querySelector(".node__type");
-  typeEl.textContent = node.type;
+  typeEl.textContent = node.type || "";
+  typeEl.contentEditable = true;
+  typeEl.spellcheck = false;
+  typeEl.addEventListener("input", (event) => {
+    node.type = event.target.textContent;
+  });
 
   const toggleBtn = element.querySelector('[data-action="toggle"]');
   toggleBtn.textContent = node.isOpen ? "收合" : "展開";
@@ -242,59 +189,68 @@ function renderNode(node, container, parent, depth = 0) {
   const content = element.querySelector(".node__content");
   const childrenContainer = element.querySelector(".node__children");
 
-  let isEditing = false;
+  const metaRow = document.createElement("div");
+  metaRow.className = "meta-row";
+  metaRow.append(createLayoutSelector(node));
+  content.append(metaRow);
 
-  const renderDisplayContent = () => {
-    content.innerHTML = "";
-    const fieldsWrap = document.createElement("div");
-    fieldsWrap.className = `field-group fields-${node.layout}`;
+  const fieldsWrap = document.createElement("div");
+  fieldsWrap.className = `field-group fields-${node.layout}`;
 
-    const descriptionField = createField("說明", node.description, "field--description");
-    const notesField = createField("注意事項", node.notes, "notes field--notes");
-    const imageField = createImageField(node.image);
-    const linkField = createLinkField(node.link);
+  const descriptionField = createEditableText("說明", node.description, (value) => {
+    node.description = value;
+  }, { multiline: true, placeholder: "輸入說明..." });
 
-    if (descriptionField) fieldsWrap.append(descriptionField);
-    if (notesField) fieldsWrap.append(notesField);
-    if (imageField) fieldsWrap.append(imageField);
-    if (linkField) fieldsWrap.append(linkField);
+  const notesField = createEditableText("注意事項", node.notes, (value) => {
+    node.notes = value;
+  }, { multiline: true, placeholder: "輸入注意事項..." });
 
-    content.append(fieldsWrap);
-  };
+  fieldsWrap.append(descriptionField, notesField);
+  content.append(fieldsWrap);
 
-  const cancelForm = () => {
-    isEditing = false;
-    render();
-  };
+  const mediaWrap = document.createElement("div");
+  mediaWrap.className = `field-group fields-${node.layout}`;
 
-  const submitForm = (updates) => {
-    Object.assign(node, updates);
-    isEditing = false;
-    render();
-  };
+  const imageField = createListField(
+    "圖片網址",
+    node.images,
+    () => {
+      node.images.push("");
+      render();
+    },
+    (index, value) => {
+      node.images[index] = value;
+    },
+    (index) => {
+      node.images.splice(index, 1);
+      render();
+    },
+    { type: "image" }
+  );
 
-  const renderEditContent = () => {
-    content.innerHTML = "";
-    const form = renderForm(node, submitForm, cancelForm);
-    content.append(form);
-  };
+  const linkField = createListField(
+    "參考網址",
+    node.links,
+    () => {
+      node.links.push("");
+      render();
+    },
+    (index, value) => {
+      node.links[index] = value;
+    },
+    (index) => {
+      node.links.splice(index, 1);
+      render();
+    },
+    { type: "link" }
+  );
 
-  renderDisplayContent();
+  mediaWrap.append(imageField, linkField);
+  content.append(mediaWrap);
 
   toggleBtn.addEventListener("click", () => {
     node.isOpen = !node.isOpen;
     render();
-  });
-
-  const editBtn = element.querySelector('[data-action="edit"]');
-
-  editBtn.addEventListener("click", () => {
-    isEditing = !isEditing;
-    if (isEditing) {
-      renderEditContent();
-    } else {
-      renderDisplayContent();
-    }
   });
 
   const deleteBtn = element.querySelector('[data-action="delete"]');

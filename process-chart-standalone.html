@@ -76,7 +76,7 @@ body {
   gap: 1rem;
   align-items: center;
   flex-wrap: wrap;
-  padding-bottom: 0.65rem;
+  padding-bottom: 0.4rem;
   border-bottom: 1px dashed #e2e8f0;
 }
 
@@ -84,12 +84,29 @@ body {
   margin: 0;
   font-size: 1.2rem;
   color: #0f172a;
+  padding: 0.2rem 0.4rem;
+  border-radius: 8px;
+  transition: background 0.15s ease;
 }
 
 .node__titles p {
   margin: 0.15rem 0 0;
   color: #475569;
   font-weight: 600;
+  padding: 0.15rem 0.35rem;
+  border-radius: 6px;
+}
+
+.node__titles h2[contenteditable="true"],
+.node__titles p[contenteditable="true"] {
+  outline: none;
+  border: 1px dashed transparent;
+}
+
+.node__titles h2[contenteditable="true"]:focus,
+.node__titles p[contenteditable="true"]:focus {
+  background: #e0f2fe;
+  border-color: #38bdf8;
 }
 
 .node[data-depth="0"] {
@@ -118,9 +135,9 @@ body {
 }
 
 .node__content {
-  margin: 0.75rem 0 0.25rem;
+  margin: 0.8rem 0 0.25rem;
   display: grid;
-  gap: 0.85rem;
+  gap: 0.75rem;
   grid-template-columns: 1fr;
 }
 
@@ -133,20 +150,29 @@ body {
 .field {
   background: #f8fafc;
   border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  padding: 0.75rem;
+  border-radius: 12px;
+  padding: 0.8rem;
 }
 
-.field--link {
-  background: #eef2ff;
-  border-color: #cbd5ff;
+.field__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
 }
 
 .field__label {
-  font-size: 0.9rem;
-  font-weight: 700;
-  color: #475569;
-  margin-bottom: 0.35rem;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #0f172a;
+  display: flex;
+  gap: 0.35rem;
+  align-items: center;
+}
+
+.field__hint {
+  color: #94a3b8;
+  font-size: 0.85rem;
 }
 
 .field__value {
@@ -156,15 +182,18 @@ body {
   line-height: 1.55;
 }
 
+.field--editable {
+  border-style: dashed;
+}
+
+.field--link {
+  background: #eef2ff;
+  border-color: #cbd5ff;
+}
+
 .notes {
   background: #fdf2f8;
   border-color: #f9a8d4;
-}
-
-.field--media .field__label {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
 }
 
 .button {
@@ -206,81 +235,30 @@ body {
   border-color: #cbd5e1;
 }
 
-.form {
-  background: #0f172a;
-  color: #e2e8f0;
-  padding: 1rem;
-  border-radius: 12px;
-  margin-top: 0.25rem;
-  display: grid;
-  gap: 0.75rem;
-}
-
-.form__row {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 0.65rem;
-  align-items: flex-start;
-}
-
-.inline-form {
-  border: 1px solid #1f2937;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
-}
-
-.form__grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 0.75rem;
-}
-
-.form label {
-  font-weight: 700;
-  display: block;
-  margin-bottom: 0.3rem;
-}
-
-.form-field {
-  background: #0b1220;
-  border: 1px solid #1f2937;
-  border-radius: 10px;
-  padding: 0.6rem 0.75rem;
-  display: grid;
-  gap: 0.4rem;
-}
-
-.form-field--inline {
-  height: 100%;
-}
-
-.form input,
-.form select,
-.form textarea {
+.inline-input,
+.inline-select,
+textarea.inline-input {
   width: 100%;
   padding: 0.55rem 0.65rem;
-  border-radius: 8px;
-  border: 1px solid #1f2937;
-  background: #111827;
-  color: #e5e7eb;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  color: #0f172a;
   font-size: 0.95rem;
   font-family: inherit;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-.form textarea {
-  min-height: 84px;
-  resize: vertical;
-}
-
-.form textarea:focus,
-.form input:focus {
-  outline: 2px solid #2563eb;
+.inline-input:focus,
+.inline-select:focus {
+  outline: none;
   border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
 }
 
-.form__actions {
-  display: flex;
-  gap: 0.5rem;
-  justify-content: flex-end;
+textarea.inline-input {
+  min-height: 88px;
+  resize: vertical;
 }
 
 .layout-vertical .node__content {
@@ -294,9 +272,10 @@ body {
 }
 
 .layout-picker {
-  border: 1px solid #1f2937;
+  border: 1px solid #e2e8f0;
   border-radius: 10px;
   padding: 0.75rem;
+  background: #fff;
 }
 
 .layout-picker legend {
@@ -307,7 +286,7 @@ body {
 .layout-picker__hint {
   margin: 0.15rem 0 0.6rem;
   font-size: 0.9rem;
-  color: #cbd5e1;
+  color: #475569;
 }
 
 .layout-picker__list {
@@ -348,8 +327,8 @@ body {
   display: flex;
   gap: 0.65rem;
   align-items: flex-start;
-  background: #111827;
-  border: 1px solid #1f2937;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
   padding: 0.65rem 0.75rem;
   border-radius: 10px;
   cursor: pointer;
@@ -358,7 +337,7 @@ body {
 
 .layout-option:hover {
   border-color: #2563eb;
-  background: #0f172a;
+  background: #eff6ff;
 }
 
 .layout-option input {
@@ -372,7 +351,7 @@ body {
 }
 
 .layout-option__desc {
-  color: #cbd5e1;
+  color: #475569;
   margin-top: 0.1rem;
 }
 
@@ -389,36 +368,70 @@ body {
   grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.85fr);
 }
 
-.edit-fields .field {
-  background: #0b1220;
-  border-color: #1f2937;
-  color: #e5e7eb;
+.meta-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 0.65rem;
 }
 
-.edit-fields .field__label {
-  color: #cbd5e1;
+.icon-button {
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  color: #0f172a;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 800;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.12s ease, border-color 0.12s ease;
 }
 
-.edit-fields .field input,
-.edit-fields .field textarea {
-  background: #111827;
-  border: 1px solid #1f2937;
-  color: #e5e7eb;
+.icon-button:hover {
+  background: #eff6ff;
+  border-color: #2563eb;
 }
 
-.field--media {
-  background: #eef2ff;
-  border-color: #c7d2fe;
+.icon-button--remove {
+  background: #fef2f2;
+  border-color: #fecdd3;
+  color: #b91c1c;
 }
 
-.field__value.link {
-  color: #2563eb;
-  word-break: break-all;
+.icon-button--remove:hover {
+  background: #fee2e2;
+  border-color: #fca5a5;
+}
+
+.field-list {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.field-list__item {
+  display: grid;
+  gap: 0.4rem;
+  grid-template-columns: 1fr auto;
+  align-items: start;
+  padding: 0.6rem 0.55rem;
+  border: 1px dashed #e2e8f0;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.field-list__controls {
+  display: flex;
+  justify-content: flex-end;
 }
 
 .media-preview {
-  margin-top: 0.5rem;
-  background: #fff;
+  grid-column: 1 / -1;
+  margin-top: 0.15rem;
+  background: #f8fafc;
   border: 1px dashed #cbd5e1;
   border-radius: 10px;
   padding: 0.5rem;
@@ -430,6 +443,17 @@ body {
   border-radius: 8px;
 }
 
+.link-preview {
+  grid-column: 1 / -1;
+  color: #2563eb;
+  word-break: break-all;
+  text-decoration: none;
+  font-weight: 700;
+}
+
+.link-preview:hover {
+  text-decoration: underline;
+}
     </style>
   </head>
   <body class="app-shell">
@@ -450,7 +474,6 @@ body {
           </div>
           <div class="node__actions">
             <button class="button button--ghost" data-action="toggle"></button>
-            <button class="button button--primary" data-action="edit">編輯</button>
             <button class="button button--danger" data-action="delete">刪除</button>
           </div>
         </div>
@@ -466,8 +489,8 @@ window.processData = {
     "主要處理的貨物稱為 NYR (Not Yet Receive)。\n作業分為板驗及散驗，需依商品的大小及數量去區分應使用的驗收方式。\n需要觀察當天預計到倉量、碼頭的卸貨量、未卸板數、各板貨態、移倉數量等等來決定散驗及板驗人力的配置。",
   notes:
     "驗收量需大於碼頭的卸貨量，否則會造成碼頭塞車。\n若有多餘人力，需要觀察上架的待上架商品暫存區是否有足夠的貨物可上架，並與上架 Captain 確認是否需要補貨。",
-  image: "https://dummyimage.com/800x240/1d4ed8/ffffff&text=RCV+流程概覽",
-  link: "https://example.com/rcv-overview",
+  images: ["https://dummyimage.com/800x240/1d4ed8/ffffff&text=RCV+流程概覽"],
+  links: ["https://example.com/rcv-overview"],
   type: "role",
   isOpen: true,
   layout: "vertical",
@@ -652,7 +675,7 @@ window.processData = {
       description: "負責棧板貨物的驗收、分類與入庫作業。\n區分為廠內用 (RCRT) 與轉出專用 (GCGP/GCGT)。",
       notes:
         "【關鍵績效指標 KPI】\n• Each: HTP 300\n• Pallet: HTP 1800\n\n【一般規範】\n• 板驗人員標示請用「白色膠帶」。\n• 驗效期以「抽查四角與中間」方式進行，以防過期混貨。\n• 食品、母嬰、洗浴等與人體接觸商品，「禁止於效期處貼標」或塗改。\n\n【重量限制】\n• 一般板：800kg\n• 液體類：可至 1000kg (但轉出不得超過 800kg)",
-      link: "https://example.com/pallet-guide",
+      links: ["https://example.com/pallet-guide"],
       type: "process",
       isOpen: true,
       layout: "vertical",
@@ -900,7 +923,6 @@ window.layoutOptions = [
     description: "說明在左、注意事項在右，便於對照重點。",
   },
 ];
-
     </script>
     <script>
 const { layoutOptions, processData } = window;
@@ -916,216 +938,153 @@ function cloneDeep(node) {
 
 function applyLayoutDefaults(node) {
   if (!node.layout) node.layout = "vertical";
+  if (!node.images) node.images = [];
+  if (!node.links) node.links = [];
   node.children?.forEach(applyLayoutDefaults);
-}
-
-function createField(label, value, extraClass = "") {
-  if (!value) return null;
-  const wrapper = document.createElement("div");
-  wrapper.className = `field ${extraClass}`;
-
-  const title = document.createElement("div");
-  title.className = "field__label";
-  title.textContent = label;
-
-  const content = document.createElement("p");
-  content.className = "field__value";
-  content.textContent = value;
-
-  wrapper.append(title, content);
-  return wrapper;
-}
-
-function createImageField(value) {
-  if (!value) return null;
-  const wrapper = document.createElement("div");
-  wrapper.className = "field field--media";
-
-  const label = document.createElement("div");
-  label.className = "field__label";
-  label.textContent = "圖片";
-
-  const preview = document.createElement("div");
-  preview.className = "media-preview";
-  const img = document.createElement("img");
-  img.src = value;
-  img.alt = "節點圖片";
-  preview.append(img);
-
-  wrapper.append(label, preview);
-  return wrapper;
-}
-
-function createLinkField(value) {
-  if (!value) return null;
-  const wrapper = document.createElement("div");
-  wrapper.className = "field field--link";
-
-  const label = document.createElement("div");
-  label.className = "field__label";
-  label.textContent = "參考網址";
-
-  const anchor = document.createElement("a");
-  anchor.className = "field__value link";
-  anchor.href = value;
-  anchor.target = "_blank";
-  anchor.rel = "noreferrer";
-  anchor.textContent = value;
-
-  wrapper.append(label, anchor);
-  return wrapper;
-}
-
-function renderForm(node, onSubmit, onCancel) {
-  const form = document.createElement("form");
-  form.className = "form inline-form";
-
-  const helper = document.createElement("p");
-  helper.className = "helper-text";
-  helper.textContent = "直接在欄位內更新內容，Enter 會保留換行。";
-
-  const headerRow = document.createElement("div");
-  headerRow.className = "form__row";
-  headerRow.append(
-    createEditInput("標題", "title", node.title, "text"),
-    createEditInput("類型", "type", node.type || "", "text"),
-    createLayoutField(node.layout)
-  );
-
-  const fieldsWrap = document.createElement("div");
-  fieldsWrap.className = `field-group fields-${node.layout} edit-fields`;
-
-  fieldsWrap.append(
-    createEditTextArea("說明", "description", node.description || ""),
-    createEditTextArea("注意事項", "notes", node.notes || ""),
-    createEditInput("圖片網址", "image", node.image || "", "url"),
-    createEditInput("參考網址", "link", node.link || "", "url")
-  );
-
-  const actions = document.createElement("div");
-  actions.className = "form__actions";
-
-  const cancelButton = document.createElement("button");
-  cancelButton.type = "button";
-  cancelButton.className = "button button--secondary";
-  cancelButton.textContent = "取消";
-  cancelButton.addEventListener("click", onCancel);
-
-  const saveButton = document.createElement("button");
-  saveButton.type = "submit";
-  saveButton.className = "button button--primary";
-  saveButton.textContent = "儲存";
-
-  actions.append(cancelButton, saveButton);
-  form.append(helper, headerRow, fieldsWrap, actions);
-
-  form.addEventListener("submit", (event) => {
-    event.preventDefault();
-    const data = new FormData(form);
-    onSubmit({
-      title: data.get("title"),
-      type: data.get("type"),
-      image: data.get("image"),
-      link: data.get("link"),
-      description: data.get("description"),
-      notes: data.get("notes"),
-      layout: data.get("layout"),
-    });
-  });
-
-  return form;
-}
-
-function createEditInput(label, name, value, type = "text") {
-  const wrapper = document.createElement("label");
-  wrapper.className = "form-field form-field--inline";
-
-  const title = document.createElement("div");
-  title.className = "field__label";
-  title.textContent = label;
-
-  const input = document.createElement("input");
-  input.name = name;
-  input.type = type;
-  input.value = value ?? "";
-
-  wrapper.append(title, input);
-  return wrapper;
-}
-
-function createEditTextArea(label, name, value) {
-  const wrapper = document.createElement("label");
-  wrapper.className = "form-field form-field--inline";
-
-  const title = document.createElement("div");
-  title.className = "field__label";
-  title.textContent = label;
-
-  const textarea = document.createElement("textarea");
-  textarea.name = name;
-  textarea.value = value ?? "";
-  textarea.rows = 3;
-
-  wrapper.append(title, textarea);
-  return wrapper;
-}
-
-function createLayoutField(value) {
-  const wrapper = document.createElement("fieldset");
-  wrapper.className = "layout-picker";
-
-  const legend = document.createElement("legend");
-  legend.textContent = "欄位版面配置";
-
-  const helper = document.createElement("p");
-  helper.className = "layout-picker__hint";
-  helper.textContent = "固定順序：標題 → 說明 → 注意事項，調整呈現比例即可。";
-
-  const list = document.createElement("div");
-  list.className = "layout-picker__list";
-
-  layoutOptions.forEach((option) => {
-    const label = document.createElement("label");
-    label.className = "layout-option";
-
-    const input = document.createElement("input");
-    input.type = "radio";
-    input.name = "layout";
-    input.value = option.value;
-    input.checked = option.value === value;
-
-    const content = document.createElement("div");
-    content.className = "layout-option__body";
-
-    const title = document.createElement("div");
-    title.className = "layout-option__title";
-    title.textContent = option.label;
-
-    const desc = document.createElement("div");
-    desc.className = "layout-option__desc";
-    desc.textContent = option.description;
-
-    const preview = document.createElement("div");
-    preview.className = `layout-option__preview preview-${option.value}`;
-    const descBlock = document.createElement("span");
-    descBlock.className = "preview__desc";
-    descBlock.textContent = "說明";
-    const noteBlock = document.createElement("span");
-    noteBlock.className = "preview__note";
-    noteBlock.textContent = "注意";
-    preview.append(descBlock, noteBlock);
-
-    content.append(title, desc, preview);
-    label.append(input, content);
-    list.append(label);
-  });
-
-  wrapper.append(legend, helper, list);
-  return wrapper;
 }
 
 function getAccent(depth) {
   return accentPalette[depth % accentPalette.length];
+}
+
+function createEditableText(label, value, onChange, options = {}) {
+  const { multiline = false, placeholder = "" } = options;
+  const wrapper = document.createElement("div");
+  wrapper.className = "field field--editable";
+
+  const header = document.createElement("div");
+  header.className = "field__header";
+  const lbl = document.createElement("div");
+  lbl.className = "field__label";
+  lbl.textContent = label;
+  const hint = document.createElement("span");
+  hint.className = "field__hint";
+  hint.textContent = "可直接編輯";
+  header.append(lbl, hint);
+
+  const inputEl = multiline ? document.createElement("textarea") : document.createElement("input");
+  inputEl.value = value || "";
+  inputEl.placeholder = placeholder;
+  inputEl.className = "inline-input";
+  if (multiline) {
+    inputEl.rows = 3;
+  }
+
+  inputEl.addEventListener("input", (event) => {
+    onChange(event.target.value);
+  });
+
+  wrapper.append(header, inputEl);
+  return wrapper;
+}
+
+function createLayoutSelector(node) {
+  const wrapper = document.createElement("div");
+  wrapper.className = "field field--layout";
+
+  const header = document.createElement("div");
+  header.className = "field__header";
+  const label = document.createElement("div");
+  label.className = "field__label";
+  label.textContent = "欄位版面配置";
+  header.append(label);
+
+  const select = document.createElement("select");
+  select.className = "inline-select";
+
+  layoutOptions.forEach((option) => {
+    const opt = document.createElement("option");
+    opt.value = option.value;
+    opt.textContent = `${option.label} — ${option.description}`;
+    if (node.layout === option.value) opt.selected = true;
+    select.append(opt);
+  });
+
+  select.addEventListener("change", (event) => {
+    node.layout = event.target.value;
+    render();
+  });
+
+  wrapper.append(header, select);
+  return wrapper;
+}
+
+function createListField(label, items, onAdd, onUpdate, onRemove, options = {}) {
+  const { type = "link" } = options;
+  const wrapper = document.createElement("div");
+  wrapper.className = `field field--editable field--list field--${type}`;
+
+  const header = document.createElement("div");
+  header.className = "field__header";
+  const lbl = document.createElement("div");
+  lbl.className = "field__label";
+  lbl.textContent = label;
+
+  const addBtn = document.createElement("button");
+  addBtn.type = "button";
+  addBtn.className = "icon-button icon-button--add";
+  addBtn.title = `新增${label}`;
+  addBtn.textContent = "+";
+  addBtn.addEventListener("click", onAdd);
+
+  header.append(lbl, addBtn);
+  wrapper.append(header);
+
+  const list = document.createElement("div");
+  list.className = "field-list";
+
+  items.forEach((value, index) => {
+    const itemRow = document.createElement("div");
+    itemRow.className = "field-list__item";
+
+    const input = document.createElement("input");
+    input.type = "url";
+    input.value = value || "";
+    input.placeholder = type === "image" ? "https://... (圖片網址)" : "https://... (參考網址)";
+    input.className = "inline-input";
+
+    input.addEventListener("input", (event) => {
+      onUpdate(index, event.target.value);
+    });
+
+    const controls = document.createElement("div");
+    controls.className = "field-list__controls";
+
+    const removeBtn = document.createElement("button");
+    removeBtn.type = "button";
+    removeBtn.className = "icon-button icon-button--remove";
+    removeBtn.title = "刪除欄位";
+    removeBtn.textContent = "×";
+    removeBtn.addEventListener("click", () => onRemove(index));
+
+    controls.append(removeBtn);
+    itemRow.append(input, controls);
+
+    if (type === "image" && value) {
+      const preview = document.createElement("div");
+      preview.className = "media-preview";
+      const img = document.createElement("img");
+      img.src = value;
+      img.alt = "圖片預覽";
+      preview.append(img);
+      itemRow.append(preview);
+    }
+
+    if (type === "link" && value) {
+      const previewLink = document.createElement("a");
+      previewLink.href = value;
+      previewLink.target = "_blank";
+      previewLink.rel = "noreferrer";
+      previewLink.className = "link-preview";
+      previewLink.textContent = value;
+      itemRow.append(previewLink);
+    }
+
+    list.append(itemRow);
+  });
+
+  wrapper.append(list);
+  return wrapper;
 }
 
 function renderNode(node, container, parent, depth = 0) {
@@ -1137,9 +1096,19 @@ function renderNode(node, container, parent, depth = 0) {
 
   const titleEl = element.querySelector(".node__title");
   titleEl.textContent = node.title;
+  titleEl.contentEditable = true;
+  titleEl.spellcheck = false;
+  titleEl.addEventListener("input", (event) => {
+    node.title = event.target.textContent;
+  });
 
   const typeEl = element.querySelector(".node__type");
-  typeEl.textContent = node.type;
+  typeEl.textContent = node.type || "";
+  typeEl.contentEditable = true;
+  typeEl.spellcheck = false;
+  typeEl.addEventListener("input", (event) => {
+    node.type = event.target.textContent;
+  });
 
   const toggleBtn = element.querySelector('[data-action="toggle"]');
   toggleBtn.textContent = node.isOpen ? "收合" : "展開";
@@ -1147,59 +1116,68 @@ function renderNode(node, container, parent, depth = 0) {
   const content = element.querySelector(".node__content");
   const childrenContainer = element.querySelector(".node__children");
 
-  let isEditing = false;
+  const metaRow = document.createElement("div");
+  metaRow.className = "meta-row";
+  metaRow.append(createLayoutSelector(node));
+  content.append(metaRow);
 
-  const renderDisplayContent = () => {
-    content.innerHTML = "";
-    const fieldsWrap = document.createElement("div");
-    fieldsWrap.className = `field-group fields-${node.layout}`;
+  const fieldsWrap = document.createElement("div");
+  fieldsWrap.className = `field-group fields-${node.layout}`;
 
-    const descriptionField = createField("說明", node.description, "field--description");
-    const notesField = createField("注意事項", node.notes, "notes field--notes");
-    const imageField = createImageField(node.image);
-    const linkField = createLinkField(node.link);
+  const descriptionField = createEditableText("說明", node.description, (value) => {
+    node.description = value;
+  }, { multiline: true, placeholder: "輸入說明..." });
 
-    if (descriptionField) fieldsWrap.append(descriptionField);
-    if (notesField) fieldsWrap.append(notesField);
-    if (imageField) fieldsWrap.append(imageField);
-    if (linkField) fieldsWrap.append(linkField);
+  const notesField = createEditableText("注意事項", node.notes, (value) => {
+    node.notes = value;
+  }, { multiline: true, placeholder: "輸入注意事項..." });
 
-    content.append(fieldsWrap);
-  };
+  fieldsWrap.append(descriptionField, notesField);
+  content.append(fieldsWrap);
 
-  const cancelForm = () => {
-    isEditing = false;
-    render();
-  };
+  const mediaWrap = document.createElement("div");
+  mediaWrap.className = `field-group fields-${node.layout}`;
 
-  const submitForm = (updates) => {
-    Object.assign(node, updates);
-    isEditing = false;
-    render();
-  };
+  const imageField = createListField(
+    "圖片網址",
+    node.images,
+    () => {
+      node.images.push("");
+      render();
+    },
+    (index, value) => {
+      node.images[index] = value;
+    },
+    (index) => {
+      node.images.splice(index, 1);
+      render();
+    },
+    { type: "image" }
+  );
 
-  const renderEditContent = () => {
-    content.innerHTML = "";
-    const form = renderForm(node, submitForm, cancelForm);
-    content.append(form);
-  };
+  const linkField = createListField(
+    "參考網址",
+    node.links,
+    () => {
+      node.links.push("");
+      render();
+    },
+    (index, value) => {
+      node.links[index] = value;
+    },
+    (index) => {
+      node.links.splice(index, 1);
+      render();
+    },
+    { type: "link" }
+  );
 
-  renderDisplayContent();
+  mediaWrap.append(imageField, linkField);
+  content.append(mediaWrap);
 
   toggleBtn.addEventListener("click", () => {
     node.isOpen = !node.isOpen;
     render();
-  });
-
-  const editBtn = element.querySelector('[data-action="edit"]');
-
-  editBtn.addEventListener("click", () => {
-    isEditing = !isEditing;
-    if (isEditing) {
-      renderEditContent();
-    } else {
-      renderDisplayContent();
-    }
   });
 
   const deleteBtn = element.querySelector('[data-action="delete"]');
@@ -1236,7 +1214,6 @@ function render() {
 const processState = cloneDeep(processData);
 applyLayoutDefaults(processState);
 render();
-
     </script>
   </body>
 </html>
