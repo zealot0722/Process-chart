@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Process Chart</title>
+    <link rel="stylesheet" href="./src/styles.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <div class="branding">
+        <span class="brand-icon">📦</span>
+        <h1>Process Chart Editor</h1>
+      </div>
+      <p class="subtitle">支援多欄位版面配置與換行顯示的流程維護工具</p>
+    </header>
+    <main id="app" class="app"></main>
+    <template id="node-template">
+      <section class="node">
+        <div class="node__header">
+          <div class="node__titles">
+            <h2 class="node__title"></h2>
+            <p class="node__type"></p>
+          </div>
+          <div class="node__actions">
+            <button class="button button--ghost" data-action="toggle"></button>
+            <button class="button button--primary" data-action="edit">編輯</button>
+            <button class="button button--danger" data-action="delete">刪除</button>
+          </div>
+        </div>
+        <div class="node__content"></div>
+        <div class="node__form"></div>
+        <div class="node__children"></div>
+      </section>
+    </template>
+    <script src="./src/data.js"></script>
+    <script src="./src/main.js"></script>
+  </body>
+</html>
