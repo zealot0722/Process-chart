@@ -36,6 +36,7 @@ const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 // --- Helper Functions ---
 const generateId = () => `node-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 const generateShareId = () => Math.random().toString(36).substr(2, 6).toUpperCase();
+const LOCAL_SAVE_KEY = 'sop_studio_local_draft';
 
 // --- Constants & Styles ---
 const STYLE_OPTIONS = {
@@ -377,6 +378,24 @@ export default function App() {
     if (auth) return onAuthStateChanged(auth, setUser);
   }, []);
 
+  useEffect(() => {
+    try {
+      const cached = localStorage.getItem(LOCAL_SAVE_KEY);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed.pages) {
+          setPages(parsed.pages);
+          setActivePageId(parsed.activePageId || parsed.pages?.[0]?.id || initialPages[0].id);
+          setGlobalPassword(parsed.globalPassword || '');
+          setStatusMsg('已載入本機草稿');
+          setIsEditable(false);
+        }
+      }
+    } catch (err) {
+      console.warn('Local restore failed', err);
+    }
+  }, []);
+
   // --- Logic ---
   const findNode = (node, id) => {
     if (node.id === id) return node;
@@ -472,6 +491,16 @@ export default function App() {
     const r = new FileReader(); r.onload = ev => { try { const d = JSON.parse(ev.target.result); if(d.pages) { setPages(d.pages); setGlobalPassword(d.globalPassword||''); } else { setPages([{ id: 'imp', name: '匯入', root: d }]); } setIsEditable(false); setStatusMsg('匯入成功'); } catch(x){ setStatusMsg('格式錯誤'); } }; r.readAsText(f);
   };
 
+  const handleLocalSave = () => {
+    try {
+      localStorage.setItem(LOCAL_SAVE_KEY, JSON.stringify({ pages, globalPassword, activePageId, savedAt: new Date().toISOString() }));
+      setStatusMsg('已儲存至本機');
+    } catch (err) {
+      console.error('Local save failed', err);
+      setStatusMsg('本機儲存失敗');
+    }
+  };
+
   const selectedNode = selectedId ? findNode(activeTreeData, selectedId) : null;
 
   return (
@@ -491,7 +520,11 @@ export default function App() {
         </div>
         <div className="flex items-center gap-3">
           <div className="hidden lg:flex items-center bg-slate-100 rounded-md px-3 py-1.5 text-xs w-48 border border-slate-200"><input value={cloudId} onChange={e => setCloudId(e.target.value.toUpperCase())} placeholder="CODE" className="bg-transparent border-none outline-none text-slate-700 w-full font-mono" />{cloudId && <button onClick={handleCloudLoad} className="text-blue-500 hover:text-blue-700"><Check size={14}/></button>}</div>
-          <div className="flex gap-1"><button onClick={handleExport} className="p-2 hover:bg-slate-100 rounded text-slate-500"><Download size={18}/></button><label className="p-2 hover:bg-slate-100 rounded text-slate-500 cursor-pointer"><Upload size={18}/><input type="file" ref={fileInputRef} onChange={handleImport} className="hidden" accept=".json"/></label></div>
+          <div className="flex gap-1">
+            <button onClick={handleExport} className="p-2 hover:bg-slate-100 rounded text-slate-500" title="匯出 JSON"><Download size={18}/></button>
+            <label className="p-2 hover:bg-slate-100 rounded text-slate-500 cursor-pointer" title="匯入 JSON"><Upload size={18}/><input type="file" ref={fileInputRef} onChange={handleImport} className="hidden" accept=".json"/></label>
+          </div>
+          <button onClick={handleLocalSave} className="flex items-center gap-1 bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-sm font-medium shadow-sm transition-colors"><Save size={16} /> 快速儲存</button>
           <button onClick={() => { if(isEditable) { setIsEditable(false); setStatusMsg('已切換至預覽'); } else { if(globalPassword && prompt('輸入密碼')!==globalPassword) return alert('密碼錯誤'); setIsEditable(true); setStatusMsg('編輯模式'); } }} className={`p-2 rounded-lg text-slate-500 hover:bg-slate-100 ${isEditable && 'bg-blue-50 text-blue-600'}`}>{isEditable ? <Unlock size={18} /> : <Lock size={18} />}</button>
           {isEditable && <button onClick={() => { const p = prompt('設定新密碼:', globalPassword); if(p!==null) setGlobalPassword(p); }} className="p-2 rounded-lg text-slate-500 hover:bg-slate-100"><Shield size={18} /></button>}
           <button onClick={() => { handleCloudSave(); setShowShareModal(true); }} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-lg text-sm font-medium shadow-sm transition-colors"><Share2 size={16} /> 分享</button>
