@@ -21,6 +21,8 @@
     <script type="text/babel">
       const { useEffect, useState, useRef } = React;
 
+      const LOCAL_SAVE_KEY = 'sop_studio_local_draft';
+
       const STYLE_OPTIONS = {
         backgrounds: [
           { name: '白色', value: 'bg-white' },
@@ -288,6 +290,21 @@
         const [globalPassword, setGlobalPassword] = useState('');
         const fileInputRef = useRef(null);
 
+        useEffect(() => {
+          try {
+            const raw = localStorage.getItem(LOCAL_SAVE_KEY);
+            if (raw) {
+              const parsed = JSON.parse(raw);
+              if (parsed.pages) setPages(parsed.pages);
+              if (parsed.activePageId) setActivePageId(parsed.activePageId);
+              if (parsed.globalPassword) setGlobalPassword(parsed.globalPassword);
+              setStatusMsg('已載入本機草稿');
+            }
+          } catch (err) {
+            console.error('Load draft failed', err);
+          }
+        }, []);
+
         const activePageIndex = pages.findIndex(p => p.id === activePageId);
         const activeTreeData = pages[activePageIndex]?.root;
 
@@ -372,6 +389,16 @@
           const r = new FileReader(); r.onload = ev => { try { const d = JSON.parse(ev.target.result); if(d.pages) { setPages(d.pages); setGlobalPassword(d.globalPassword||''); } else { setPages([{ id: 'imp', name: '匯入', root: d }]); } setIsEditable(false); setStatusMsg('匯入成功'); } catch(x){ setStatusMsg('格式錯誤'); } }; r.readAsText(f);
         };
 
+        const handleLocalSave = () => {
+          try {
+            localStorage.setItem(LOCAL_SAVE_KEY, JSON.stringify({ pages, globalPassword, activePageId, savedAt: new Date().toISOString() }));
+            setStatusMsg('已儲存至本機');
+          } catch (err) {
+            console.error('Local save failed', err);
+            setStatusMsg('本機儲存失敗');
+          }
+        };
+
         const selectedNode = selectedId ? findNode(activeTreeData, selectedId) : null;
 
         return (
@@ -399,6 +426,7 @@
                   <button onClick={handleExport} className="p-2 hover:bg-slate-100 rounded text-slate-500">匯出</button>
                   <label className="p-2 hover:bg-slate-100 rounded text-slate-500 cursor-pointer">匯入<input type="file" ref={fileInputRef} onChange={handleImport} className="hidden" accept=".json"/></label>
                 </div>
+                <button onClick={handleLocalSave} className="flex items-center gap-1 bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-sm font-medium shadow-sm transition-colors">儲存</button>
                 <button onClick={() => { if(isEditable) { setIsEditable(false); setStatusMsg('已切換至預覽'); } else { if(globalPassword && prompt('輸入密碼')!==globalPassword) return alert('密碼錯誤'); setIsEditable(true); setStatusMsg('編輯模式'); } }} className={`p-2 rounded-lg text-slate-500 hover:bg-slate-100 ${isEditable && 'bg-blue-50 text-blue-600'}`}>{isEditable ? '解鎖' : '鎖定'}</button>
                 {isEditable && <button onClick={() => { const p = prompt('設定新密碼:', globalPassword); if(p!==null) setGlobalPassword(p); }} className="p-2 rounded-lg text-slate-500 hover:bg-slate-100">密碼</button>}
                 <button onClick={() => alert('此為離線預覽版本，分享功能僅在完整專案中可用。')} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-lg text-sm font-medium shadow-sm transition-colors">分享</button>
