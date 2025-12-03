@@ -316,7 +316,14 @@ const TreeNode = ({ node, selectedId, onSelect, onToggle, onAction, depth = 0, i
       {depth > 0 && <div className="absolute top-0 left-[-24px] h-full w-px bg-slate-300 transform -translate-x-1/2" />}
       {depth > 0 && <div className="absolute top-[28px] left-[-24px] w-6 h-px bg-slate-300" />}
       <div className="mb-4 relative group">
-        <div onClick={(e) => { e.stopPropagation(); onSelect(node.id); }} className={`relative rounded-xl border p-4 transition-all duration-200 cursor-pointer ${nodeStyle.bgColor} ${nodeStyle.fontFamily} ${isSelected ? 'ring-2 ring-blue-500 ring-offset-2 shadow-lg scale-[1.01]' : 'shadow-sm hover:shadow-md hover:border-blue-300'} ${nodeStyle.borderColor.includes('border-l-4') ? nodeStyle.borderColor : `border-l-4 ${nodeStyle.borderColor}`}`}>
+        <div
+          onClick={(e) => {
+            e.stopPropagation();
+            onSelect(node.id);
+            onToggle(node.id);
+          }}
+          className={`relative rounded-xl border p-4 transition-all duration-200 cursor-pointer ${nodeStyle.bgColor} ${nodeStyle.fontFamily} ${isSelected ? 'ring-2 ring-blue-500 ring-offset-2 shadow-lg scale-[1.01]' : 'shadow-sm hover:shadow-md hover:border-blue-300'} ${nodeStyle.borderColor.includes('border-l-4') ? nodeStyle.borderColor : `border-l-4 ${nodeStyle.borderColor}`}`}
+        >
           <div className="flex items-start justify-between gap-3">
              <div className="flex items-center gap-3 flex-1">
                 <div className={`p-2 rounded-lg shrink-0 ${isSelected ? 'bg-blue-50' : 'bg-white/80 border border-slate-100'}`}>{getIcon()}</div>
