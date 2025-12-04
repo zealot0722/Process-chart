@@ -253,6 +253,7 @@
                 isEditable={isEditable}
                 searchTerm={searchTerm}
                 onImageClick={onImageClick}
+                onCardClick={onCardClick}
                 siblingIndex={idx}
                 siblingCount={node.children.length}
                 parentId={node.id}
@@ -358,7 +359,9 @@
         const [statusMsg, setStatusMsg] = useState('預覽模式');
         const [globalPassword, setGlobalPassword] = useState('');
         const [searchTerm, setSearchTerm] = useState('');
+        const [searchResults, setSearchResults] = useState([]);
         const [imagePreview, setImagePreview] = useState('');
+        const [showSearchPanel, setShowSearchPanel] = useState(true);
         const fileInputRef = useRef(null);
 
         useEffect(() => {
@@ -394,6 +397,27 @@
           const { node } = expandMatches(activeTreeData);
           updatePagesWithNewTree(node);
         }, [searchTerm]);
+
+        useEffect(() => {
+          if (!searchTerm.trim() || !activeTreeData) {
+            setSearchResults([]);
+            return;
+          }
+          const lower = searchTerm.toLowerCase();
+          const results = [];
+          const walk = (node, path) => {
+            const fullPath = [...path, node.title || '未命名'];
+            const match = (node.title || '').toLowerCase().includes(lower)
+              || (node.description || '').toLowerCase().includes(lower)
+              || (node.notes || '').toLowerCase().includes(lower);
+            if (match) {
+              results.push({ id: node.id, title: node.title || '未命名', path: fullPath.join(' / ') });
+            }
+            (node.children || []).forEach(child => walk(child, fullPath));
+          };
+          walk(activeTreeData, []);
+          setSearchResults(results);
+        }, [searchTerm, activeTreeData]);
 
         const activePageIndex = pages.findIndex(p => p.id === activePageId);
         const activeTreeData = pages[activePageIndex]?.root;
@@ -592,6 +616,32 @@
           }
         };
 
+        const openPathToNode = (node, targetId) => {
+          if (!node) return { found: false, node };
+          if (node.id === targetId) return { found: true, node: { ...node, isOpen: true } };
+          let found = false;
+          const children = (node.children || []).map(child => {
+            const res = openPathToNode(child, targetId);
+            if (res.found) found = true;
+            return res.node;
+          });
+          return { found, node: { ...node, isOpen: found || node.isOpen, children } };
+        };
+
+        const handleCardClick = (nodeId) => {
+          setSelectedId(nodeId);
+          handleToggleNode(nodeId);
+        };
+
+        const handleJumpToNode = (nodeId) => {
+          const res = openPathToNode(activeTreeData, nodeId);
+          if (res.found) {
+            updatePagesWithNewTree(res.node);
+            setSelectedId(nodeId);
+            setTimeout(() => document.getElementById(`node-${nodeId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 80);
+          }
+        };
+
         const selectedNode = selectedId ? findNode(activeTreeData, selectedId) : null;
 
         return (
@@ -615,11 +665,6 @@
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                <div className="hidden md:flex items-center bg-slate-100 border border-slate-200 rounded-lg px-2 py-1.5 text-sm text-slate-600 min-w-[220px]">
-                  <span className="mr-2 text-slate-400">🔍</span>
-                  <input value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="搜尋標題 / 內容 / 備註" className="bg-transparent outline-none flex-1" />
-                  {searchTerm && <button onClick={() => setSearchTerm('')} className="text-slate-400 hover:text-slate-600 text-xs">清除</button>}
-                </div>
                 <div className="flex gap-1">
                   <button onClick={handleExport} className="p-2 hover:bg-slate-100 rounded text-slate-500">匯出</button>
                   <label className="p-2 hover:bg-slate-100 rounded text-slate-500 cursor-pointer">匯入<input type="file" ref={fileInputRef} onChange={handleImport} className="hidden" accept=".json"/></label>
@@ -632,6 +677,43 @@
             </header>
             <div className="h-6 bg-slate-50 border-b border-slate-200 flex items-center justify-center text-[10px] text-slate-400"><span>{statusMsg || (isEditable ? '編輯模式' : '預覽模式')}</span></div>
             <main className="flex-1 flex overflow-hidden relative">
+              <aside className={`bg-white border-r border-slate-200 h-full flex flex-col transition-all duration-200 ${showSearchPanel ? `w-[${SEARCH_PANEL_WIDTH}px]` : 'w-9'} overflow-hidden`}>
+                <div className="flex items-center justify-between px-2 py-2 border-b border-slate-100">
+                  <button onClick={() => setShowSearchPanel(!showSearchPanel)} className="p-2 rounded-md hover:bg-slate-100 text-slate-500" title={showSearchPanel ? '收合搜尋' : '展開搜尋'}>
+                    🔍
+                  </button>
+                  {showSearchPanel && <span className="text-xs text-slate-500 font-medium">搜尋</span>}
+                </div>
+                {showSearchPanel && (
+                  <div className="flex-1 overflow-y-auto p-3 space-y-3">
+                    <div className="flex items-center gap-2 bg-slate-100 border border-slate-200 rounded-lg px-2 py-1.5 text-sm text-slate-600">
+                      <input
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        placeholder="搜尋標題 / 內容 / 備註"
+                        className="bg-transparent outline-none flex-1"
+                      />
+                      {searchTerm && <button onClick={() => setSearchTerm('')} className="text-slate-400 hover:text-slate-600 text-xs">清除</button>}
+                    </div>
+                    <div className="flex items-center justify-between text-[11px] text-slate-500 px-1">
+                      <span>符合項目：{searchResults.length}</span>
+                    </div>
+                    <div className="space-y-1">
+                      {searchResults.map(item => (
+                        <button
+                          key={item.id}
+                          onClick={() => handleJumpToNode(item.id)}
+                          className="w-full text-left px-2 py-2 rounded-lg border border-slate-200 bg-slate-50 hover:bg-blue-50 hover:border-blue-200 text-xs"
+                        >
+                          <div className="font-semibold text-slate-800 truncate">{item.title}</div>
+                          <div className="text-[10px] text-slate-500 truncate">{item.path}</div>
+                        </button>
+                      ))}
+                      {searchTerm && searchResults.length === 0 && <p className="text-xs text-amber-500 px-2">沒有找到結果</p>}
+                    </div>
+                  </div>
+                )}
+              </aside>
               <div className="flex-1 overflow-auto bg-slate-50/50 p-8 md:p-12" onClick={() => setSelectedId(null)}>
                 <div className="max-w-4xl mx-auto pb-32">
                   {activeTreeData && (
@@ -644,6 +726,7 @@
                       isEditable={isEditable}
                       searchTerm={searchTerm}
                       onImageClick={setImagePreview}
+                      onCardClick={handleCardClick}
                       rootId={activeTreeData.id}
                     />
                   )}
