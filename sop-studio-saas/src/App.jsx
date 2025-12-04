@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  ChevronDown, ChevronRight, Edit2, Save, X, Plus, Trash2, 
-  Link as LinkIcon, Image as ImageIcon, ExternalLink, 
-  Box, Activity, CheckCircle, AlertTriangle, 
+import {
+  ChevronDown, ChevronRight, Edit2, Save, X, Plus, Trash2,
+  Link as LinkIcon, Image as ImageIcon, ExternalLink,
+  Box, Activity, CheckCircle, AlertTriangle,
   Layout, Settings, Share2, Globe, Check, Lock, Unlock, Shield,
   FileText, MoreHorizontal, LayoutGrid,
   Download, Upload, CloudUpload, CloudDownload, Palette,
-  GitCommit, GitPullRequest, PlusCircle, Search, Move
+  GitPullRequest, PlusCircle, Search, ArrowUp, ArrowDown, IndentDecrease, IndentIncrease
 } from 'lucide-react';
 
 // Firebase Imports
@@ -37,7 +37,6 @@ const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 const generateId = () => `node-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 const generateShareId = () => Math.random().toString(36).substr(2, 6).toUpperCase();
 const LOCAL_SAVE_KEY = 'sop_studio_local_draft';
-const DRAG_DATA_KEY = 'sop_node_id';
 const SEARCH_PANEL_WIDTH = 320;
 
 // --- Constants & Styles ---
@@ -309,18 +308,22 @@ const TreeNode = ({
   onAction,
   depth = 0,
   isEditable,
-  draggingId,
-  onDrop,
   searchTerm,
   onImageClick,
-  onBeginDrag,
   onCardClick,
-  pendingMove
+  siblingIndex = 0,
+  siblingCount = 1,
+  parentId = null,
+  rootId
 }) => {
   const isSelected = selectedId === node.id;
   const nodeStyle = { bgColor: 'bg-white', borderColor: 'border-slate-200', fontFamily: 'font-sans', titleSize: 'text-lg', contentSize: 'text-base', ...node.style };
   const images = node.images || [];
   const links = node.links || [];
+  const canMoveUp = isEditable && parentId && siblingIndex > 0;
+  const canMoveDown = isEditable && parentId && siblingIndex < siblingCount - 1;
+  const canLevelUp = isEditable && parentId && parentId !== rootId;
+  const canLevelDown = isEditable && parentId && siblingIndex > 0;
   const hasSearchTerm = (searchTerm || '').trim().length > 0;
   const lowerTerm = (searchTerm || '').toLowerCase();
   const hasMatch = hasSearchTerm && (
@@ -341,23 +344,34 @@ const TreeNode = ({
       {depth > 0 && <div className="absolute top-[28px] left-[-24px] w-6 h-px bg-slate-300" />}
       <div className="mb-4 relative group">
         <div
-          className="h-2 -mt-2 mb-1"
-          onDragOver={(e) => { if (isEditable && draggingId) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; } }}
-          onDrop={(e) => { e.preventDefault(); if (isEditable) onDrop(e.dataTransfer.getData(DRAG_DATA_KEY), node.id, 'before'); }}
-        />
-        <div
           id={`node-${node.id}`}
-          draggable={isEditable}
-          onDragStart={(e) => { if (isEditable) { e.dataTransfer.setData(DRAG_DATA_KEY, node.id); e.dataTransfer.effectAllowed = 'move'; onBeginDrag(node.id); } }}
-          onDragEnd={() => onBeginDrag(null)}
-          onDragOver={(e) => { if (isEditable && draggingId) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; } }}
           onClick={(e) => {
             e.stopPropagation();
             onCardClick(node.id);
           }}
           className={`relative rounded-xl border p-4 transition-all duration-200 cursor-pointer ${nodeStyle.bgColor} ${nodeStyle.fontFamily} ${isSelected ? 'ring-2 ring-blue-500 ring-offset-2 shadow-lg scale-[1.01]' : 'shadow-sm hover:shadow-md hover:border-blue-300'} ${nodeStyle.borderColor.includes('border-l-4') ? nodeStyle.borderColor : `border-l-4 ${nodeStyle.borderColor}`} ${hasMatch ? 'border-dashed border-amber-400 shadow-[0_0_0_3px_rgba(251,191,36,0.25)]' : ''}`}>
           <div className="flex items-start justify-between gap-3">
-             <div className="flex items-center gap-3 flex-1">
+             <div className="flex items-start gap-3 flex-1">
+                {isEditable && parentId && (
+                  <div className="flex flex-col items-center gap-1 pt-1 text-slate-400">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); onAction('moveUp', node.id); }}
+                      disabled={!canMoveUp}
+                      className={`p-1 rounded hover:bg-slate-100 ${canMoveUp ? 'hover:text-blue-600' : 'opacity-40 cursor-not-allowed'}`}
+                      title="上移"
+                    >
+                      <ArrowUp size={14} />
+                    </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); onAction('moveDown', node.id); }}
+                      disabled={!canMoveDown}
+                      className={`p-1 rounded hover:bg-slate-100 ${canMoveDown ? 'hover:text-blue-600' : 'opacity-40 cursor-not-allowed'}`}
+                      title="下移"
+                    >
+                      <ArrowDown size={14} />
+                    </button>
+                  </div>
+                )}
                 <div className={`p-2 rounded-lg shrink-0 ${isSelected ? 'bg-blue-50' : 'bg-white/80 border border-slate-100'}`}>{getIcon()}</div>
                 <div className="flex-1"><h3 className={`font-bold text-slate-800 leading-tight ${nodeStyle.titleSize}`}>{node.title}</h3></div>
              </div>
@@ -366,7 +380,8 @@ const TreeNode = ({
                   <>
                      <button onClick={(e) => { e.stopPropagation(); onAction('addSibling', node.id); }} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded" title="新增同層"><GitPullRequest size={16} className="rotate-90" /></button>
                      <button onClick={(e) => { e.stopPropagation(); onAction('addChild', node.id); }} className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded" title="新增子層"><PlusCircle size={16} /></button>
-                     <button onClick={(e) => { e.stopPropagation(); onAction('reparent', node.id); }} className={`p-1.5 rounded text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 ${pendingMove === node.id ? 'bg-indigo-100 text-indigo-700' : ''}`} title="調整層級"><Move size={16} /></button>
+                     <button onClick={(e) => { e.stopPropagation(); onAction('levelUp', node.id); }} className={`p-1.5 rounded text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 ${!canLevelUp ? 'opacity-40 cursor-not-allowed' : ''}`} disabled={!canLevelUp} title="提升層級"><IndentDecrease size={16} /></button>
+                     <button onClick={(e) => { e.stopPropagation(); onAction('levelDown', node.id); }} className={`p-1.5 rounded text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 ${!canLevelDown ? 'opacity-40 cursor-not-allowed' : ''}`} disabled={!canLevelDown} title="降低層級"><IndentIncrease size={16} /></button>
                      {depth > 0 && <button onClick={(e) => { e.stopPropagation(); onAction('delete', node.id); }} className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded" title="刪除"><Trash2 size={16} /></button>}
                   </>
                 )}
@@ -399,12 +414,7 @@ const TreeNode = ({
           )}
         </div>
       </div>
-      <div
-        className="h-2 mt-1"
-        onDragOver={(e) => { if (isEditable && draggingId) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; } }}
-        onDrop={(e) => { e.preventDefault(); if (isEditable) onDrop(e.dataTransfer.getData(DRAG_DATA_KEY), node.id, 'after'); }}
-      />
-      {node.isOpen && node.children && <div className="pl-12">{node.children.map(child => (<TreeNode key={child.id} node={child} selectedId={selectedId} onSelect={onSelect} onToggle={onToggle} onAction={onAction} depth={depth + 1} isEditable={isEditable} draggingId={draggingId} onDrop={onDrop} searchTerm={searchTerm} onImageClick={onImageClick} onBeginDrag={onBeginDrag} onCardClick={onCardClick} pendingMove={pendingMove} />))}</div>}
+      {node.isOpen && node.children && <div className="pl-12">{node.children.map((child, idx) => (<TreeNode key={child.id} node={child} selectedId={selectedId} onSelect={onSelect} onToggle={onToggle} onAction={onAction} depth={depth + 1} isEditable={isEditable} searchTerm={searchTerm} onImageClick={onImageClick} onCardClick={onCardClick} siblingIndex={idx} siblingCount={node.children.length} parentId={node.id} rootId={rootId} />))}</div>}
     </div>
   );
 };
@@ -423,10 +433,8 @@ export default function App() {
   const [globalPassword, setGlobalPassword] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState([]);
-  const [draggingId, setDraggingId] = useState(null);
   const [imagePreview, setImagePreview] = useState('');
   const [showSearchPanel, setShowSearchPanel] = useState(true);
-  const [moveSourceId, setMoveSourceId] = useState(null);
   const fileInputRef = useRef(null);
 
   const activePageIndex = pages.findIndex(p => p.id === activePageId);
@@ -552,12 +560,6 @@ export default function App() {
     return node;
   };
 
-  const containsId = (node, targetId) => {
-    if (!node) return false;
-    if (node.id === targetId) return true;
-    return (node.children || []).some(child => containsId(child, targetId));
-  };
-
   const removeNodeFromTree = (node, targetId) => {
     if (node.id === targetId) return { removed: node, tree: null };
     if (!node.children) return { removed: null, tree: node };
@@ -604,17 +606,44 @@ export default function App() {
     if (node.children) return { ...node, children: node.children.map(c => reorderSiblings(c, parentId, dragId, targetId, position)) };
     return node;
   };
-
-  const handleDropNode = (dragId, targetId, position) => {
-    setDraggingId(null);
-    if (!dragId || !targetId || !position) return;
-    if (dragId === targetId || dragId === activeTreeData.id) return;
-    const dragParent = findParent(activeTreeData, dragId);
-    const targetParent = findParent(activeTreeData, targetId);
-    if (!dragParent || !targetParent || dragParent.id !== targetParent.id) return;
-    const updated = reorderSiblings(activeTreeData, dragParent.id, dragId, targetId, position);
+  const moveNodeWithinLevel = (nodeId, direction) => {
+    const parent = findParent(activeTreeData, nodeId);
+    if (!parent || !parent.children) return;
+    const siblings = parent.children;
+    const idx = siblings.findIndex(c => c.id === nodeId);
+    const neighbor = direction === 'up' ? siblings[idx - 1] : siblings[idx + 1];
+    if (!neighbor) return;
+    const updated = reorderSiblings(activeTreeData, parent.id, nodeId, neighbor.id, direction === 'up' ? 'before' : 'after');
     updatePagesWithNewTree(updated);
-    setSelectedId(dragId);
+    setSelectedId(nodeId);
+    setStatusMsg('已調整順序');
+  };
+
+  const levelUpNode = (nodeId) => {
+    const parent = findParent(activeTreeData, nodeId);
+    if (!parent || parent.id === activeTreeData.id) { setStatusMsg('已在最上層'); return; }
+    const grand = findParent(activeTreeData, parent.id);
+    if (!grand) return;
+    const { removed, tree } = removeNodeFromTree(activeTreeData, nodeId);
+    if (!removed || !tree) return;
+    const updated = insertAsSibling(tree, parent.id, removed, 'after');
+    updatePagesWithNewTree(updated);
+    setSelectedId(nodeId);
+    setStatusMsg('已提升層級');
+  };
+
+  const levelDownNode = (nodeId) => {
+    const parent = findParent(activeTreeData, nodeId);
+    if (!parent || !parent.children) { setStatusMsg('無法降低層級'); return; }
+    const idx = parent.children.findIndex(c => c.id === nodeId);
+    if (idx <= 0) { setStatusMsg('需要有上一個同層區塊才能降低'); return; }
+    const newParent = parent.children[idx - 1];
+    const { removed, tree } = removeNodeFromTree(activeTreeData, nodeId);
+    if (!removed || !tree) return;
+    const updated = insertAsChild(tree, newParent.id, removed);
+    updatePagesWithNewTree(updated);
+    setSelectedId(nodeId);
+    setStatusMsg('已降低層級');
   };
   const handleNodeAction = (action, id) => {
     if (action === 'delete') {
@@ -627,9 +656,14 @@ export default function App() {
       updatePagesWithNewTree(addChildRec(activeTreeData, id));
       const parent = findNode(activeTreeData, id);
       if(parent && !parent.isOpen) handleUpdateNode(id, { ...parent, isOpen: true });
-    } else if (action === 'reparent') {
-      setMoveSourceId(id);
-      setStatusMsg('請點選新的父層區塊以變更層級');
+    } else if (action === 'moveUp') {
+      moveNodeWithinLevel(id, 'up');
+    } else if (action === 'moveDown') {
+      moveNodeWithinLevel(id, 'down');
+    } else if (action === 'levelUp') {
+      levelUpNode(id);
+    } else if (action === 'levelDown') {
+      levelDownNode(id);
     }
   };
 
@@ -693,32 +727,7 @@ export default function App() {
     return { found, node: { ...node, isOpen: found || node.isOpen, children } };
   };
 
-  const handleReparent = (sourceId, targetParentId) => {
-    if (sourceId === targetParentId) return;
-    if (sourceId === activeTreeData.id) return alert('根節點無法移動');
-    const sourceNode = findNode(activeTreeData, sourceId);
-    if (!sourceNode) return;
-    if (containsId(sourceNode, targetParentId)) return alert('無法移動到自己的子層');
-    const { removed, tree } = removeNodeFromTree(activeTreeData, sourceId);
-    if (!removed || !tree) return;
-    const updated = insertAsChild(tree, targetParentId, removed);
-    updatePagesWithNewTree(updated);
-    setSelectedId(sourceId);
-    setStatusMsg('已變更層級');
-    setTimeout(() => document.getElementById(`node-${sourceId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50);
-  };
-
   const handleCardClick = (nodeId) => {
-    if (moveSourceId) {
-      if (nodeId === moveSourceId) {
-        setMoveSourceId(null);
-        setStatusMsg('已取消移動');
-        return;
-      }
-      handleReparent(moveSourceId, nodeId);
-      setMoveSourceId(null);
-      return;
-    }
     setSelectedId(nodeId);
     handleToggleNode(nodeId);
   };
@@ -741,7 +750,7 @@ export default function App() {
           <div className="flex items-center gap-2 font-bold text-xl text-slate-800"><div className="bg-blue-600 rounded-md p-1.5"><Layout className="text-white" size={18} /></div><span>SOP Studio</span></div>
           <div className="flex items-center gap-1 overflow-x-auto max-w-xl no-scrollbar">
             {pages.map(page => (
-              <div key={page.id} onClick={() => { setActivePageId(page.id); setSelectedId(null); setMoveSourceId(null); }} className={`group relative flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-medium cursor-pointer transition-all border ${activePageId === page.id ? 'bg-slate-100 text-slate-800 border-slate-200 shadow-sm' : 'bg-transparent text-slate-500 border-transparent hover:bg-slate-50'}`}>
+              <div key={page.id} onClick={() => { setActivePageId(page.id); setSelectedId(null); }} className={`group relative flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-medium cursor-pointer transition-all border ${activePageId === page.id ? 'bg-slate-100 text-slate-800 border-slate-200 shadow-sm' : 'bg-transparent text-slate-500 border-transparent hover:bg-slate-50'}`}>
                 {page.name}
                 {isEditable && activePageId === page.id && (<div className="flex gap-1 ml-1 opacity-0 group-hover:opacity-100 transition-opacity"><button onClick={(e) => { e.stopPropagation(); editPageName(page.id); }} className="hover:text-blue-600"><Edit2 size={12} /></button><button onClick={(e) => { e.stopPropagation(); deletePage(page.id); }} className="hover:text-red-600"><X size={12} /></button></div>)}
               </div>
@@ -780,7 +789,6 @@ export default function App() {
               </div>
               <div className="flex items-center justify-between text-[11px] text-slate-400 px-1">
                 <span>符合項目：{searchResults.length}</span>
-                {moveSourceId && <span className="text-indigo-600 font-medium">選擇新父層中...</span>}
               </div>
               <div className="space-y-2">
                 {searchResults.map(item => (
@@ -799,7 +807,7 @@ export default function App() {
             </div>
           )}
         </aside>
-        <div className="flex-1 overflow-auto bg-slate-50/50 p-8 md:p-12" onClick={() => { setSelectedId(null); setMoveSourceId(null); }}>
+        <div className="flex-1 overflow-auto bg-slate-50/50 p-8 md:p-12" onClick={() => { setSelectedId(null); }}>
            <div className="max-w-4xl mx-auto pb-32">
               {activeTreeData && (
                 <TreeNode
@@ -809,13 +817,10 @@ export default function App() {
                   onToggle={handleToggleNode}
                   onAction={handleNodeAction}
                   isEditable={isEditable}
-                  draggingId={draggingId}
-                  onDrop={handleDropNode}
                   searchTerm={searchTerm}
                   onImageClick={setImagePreview}
-                  onBeginDrag={setDraggingId}
                   onCardClick={handleCardClick}
-                  pendingMove={moveSourceId}
+                  rootId={activeTreeData.id}
                 />
               )}
               <div className="pl-12 relative mt-4 opacity-50"><div className="absolute top-0 left-[-24px] h-8 w-px bg-slate-300 transform -translate-x-1/2" /><div className="ml-4 p-3 border-2 border-dashed border-slate-300 rounded-lg text-slate-400 text-xs text-center">END OF FLOW</div></div>
