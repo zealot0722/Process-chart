@@ -23,6 +23,7 @@
 
       const LOCAL_SAVE_KEY = 'sop_studio_local_draft';
       const DRAG_DATA_KEY = 'sop_node_id';
+      const SEARCH_PANEL_WIDTH = 320;
 
       const STYLE_OPTIONS = {
         backgrounds: [
@@ -156,7 +157,9 @@
         onDrop,
         searchTerm,
         onImageClick,
-        onBeginDrag
+        onBeginDrag,
+        onCardClick,
+        pendingMove
       }) => {
         const isSelected = selectedId === node.id;
         const nodeStyle = { bgColor: 'bg-white', borderColor: 'border-slate-200', fontFamily: 'font-sans', titleSize: 'text-lg', contentSize: 'text-base', ...node.style };
@@ -187,12 +190,12 @@
                 onDrop={(e) => { e.preventDefault(); if (isEditable) onDrop(e.dataTransfer.getData(DRAG_DATA_KEY), node.id, 'before'); }}
               />
               <div
+                id={`node-${node.id}`}
                 draggable={isEditable}
                 onDragStart={(e) => { if (isEditable) { e.dataTransfer.setData(DRAG_DATA_KEY, node.id); e.dataTransfer.effectAllowed = 'move'; onBeginDrag(node.id); } }}
-                onDragEnd={() => onDrop(null, null, null)}
+                onDragEnd={() => onBeginDrag(null)}
                 onDragOver={(e) => { if (isEditable && draggingId) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; } }}
-                onDrop={(e) => { e.preventDefault(); if (isEditable) onDrop(e.dataTransfer.getData(DRAG_DATA_KEY), node.id, 'inside'); }}
-                onClick={(e) => { e.stopPropagation(); onSelect(node.id); onToggle(node.id); }}
+                onClick={(e) => { e.stopPropagation(); onCardClick(node.id); }}
                 className={`relative rounded-xl border p-4 transition-all duration-200 cursor-pointer ${nodeStyle.bgColor} ${nodeStyle.fontFamily} ${isSelected ? 'ring-2 ring-blue-500 ring-offset-2 shadow-lg scale-[1.01]' : 'shadow-sm hover:shadow-md hover:border-blue-300'} ${nodeStyle.borderColor.includes('border-l-4') ? nodeStyle.borderColor : `border-l-4 ${nodeStyle.borderColor}`} ${hasMatch ? 'border-dashed border-amber-400 shadow-[0_0_0_3px_rgba(251,191,36,0.25)]' : ''}`}>
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-3 flex-1">
@@ -204,6 +207,7 @@
                       <>
                         <button onClick={(e) => { e.stopPropagation(); onAction('addSibling', node.id); }} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded" title="新增同層">＋同層</button>
                         <button onClick={(e) => { e.stopPropagation(); onAction('addChild', node.id); }} className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded" title="新增子層">＋子</button>
+                        <button onClick={(e) => { e.stopPropagation(); onAction('reparent', node.id); }} className={`p-1.5 rounded text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 ${pendingMove === node.id ? 'bg-indigo-100 text-indigo-700' : ''}`} title="調整層級">⇅</button>
                         {depth > 0 && <button onClick={(e) => { e.stopPropagation(); onAction('delete', node.id); }} className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded" title="刪除">刪</button>}
                       </>
                     )}

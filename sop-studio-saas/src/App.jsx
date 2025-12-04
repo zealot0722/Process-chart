@@ -38,6 +38,7 @@ const generateId = () => `node-${Date.now()}-${Math.random().toString(36).substr
 const generateShareId = () => Math.random().toString(36).substr(2, 6).toUpperCase();
 const LOCAL_SAVE_KEY = 'sop_studio_local_draft';
 const DRAG_DATA_KEY = 'sop_node_id';
+const SEARCH_PANEL_WIDTH = 320;
 
 // --- Constants & Styles ---
 const STYLE_OPTIONS = {
@@ -312,7 +313,9 @@ const TreeNode = ({
   onDrop,
   searchTerm,
   onImageClick,
-  onBeginDrag
+  onBeginDrag,
+  onCardClick,
+  pendingMove
 }) => {
   const isSelected = selectedId === node.id;
   const nodeStyle = { bgColor: 'bg-white', borderColor: 'border-slate-200', fontFamily: 'font-sans', titleSize: 'text-lg', contentSize: 'text-base', ...node.style };
@@ -343,15 +346,14 @@ const TreeNode = ({
           onDrop={(e) => { e.preventDefault(); if (isEditable) onDrop(e.dataTransfer.getData(DRAG_DATA_KEY), node.id, 'before'); }}
         />
         <div
+          id={`node-${node.id}`}
           draggable={isEditable}
           onDragStart={(e) => { if (isEditable) { e.dataTransfer.setData(DRAG_DATA_KEY, node.id); e.dataTransfer.effectAllowed = 'move'; onBeginDrag(node.id); } }}
-          onDragEnd={() => onDrop(null, null, null)}
+          onDragEnd={() => onBeginDrag(null)}
           onDragOver={(e) => { if (isEditable && draggingId) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; } }}
-          onDrop={(e) => { e.preventDefault(); if (isEditable) onDrop(e.dataTransfer.getData(DRAG_DATA_KEY), node.id, 'inside'); }}
           onClick={(e) => {
             e.stopPropagation();
-            onSelect(node.id);
-            onToggle(node.id);
+            onCardClick(node.id);
           }}
           className={`relative rounded-xl border p-4 transition-all duration-200 cursor-pointer ${nodeStyle.bgColor} ${nodeStyle.fontFamily} ${isSelected ? 'ring-2 ring-blue-500 ring-offset-2 shadow-lg scale-[1.01]' : 'shadow-sm hover:shadow-md hover:border-blue-300'} ${nodeStyle.borderColor.includes('border-l-4') ? nodeStyle.borderColor : `border-l-4 ${nodeStyle.borderColor}`} ${hasMatch ? 'border-dashed border-amber-400 shadow-[0_0_0_3px_rgba(251,191,36,0.25)]' : ''}`}>
           <div className="flex items-start justify-between gap-3">
@@ -364,6 +366,7 @@ const TreeNode = ({
                   <>
                      <button onClick={(e) => { e.stopPropagation(); onAction('addSibling', node.id); }} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded" title="新增同層"><GitPullRequest size={16} className="rotate-90" /></button>
                      <button onClick={(e) => { e.stopPropagation(); onAction('addChild', node.id); }} className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded" title="新增子層"><PlusCircle size={16} /></button>
+                     <button onClick={(e) => { e.stopPropagation(); onAction('reparent', node.id); }} className={`p-1.5 rounded text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 ${pendingMove === node.id ? 'bg-indigo-100 text-indigo-700' : ''}`} title="調整層級"><Move size={16} /></button>
                      {depth > 0 && <button onClick={(e) => { e.stopPropagation(); onAction('delete', node.id); }} className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded" title="刪除"><Trash2 size={16} /></button>}
                   </>
                 )}
@@ -401,7 +404,7 @@ const TreeNode = ({
         onDragOver={(e) => { if (isEditable && draggingId) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; } }}
         onDrop={(e) => { e.preventDefault(); if (isEditable) onDrop(e.dataTransfer.getData(DRAG_DATA_KEY), node.id, 'after'); }}
       />
-      {node.isOpen && node.children && <div className="pl-12">{node.children.map(child => (<TreeNode key={child.id} node={child} selectedId={selectedId} onSelect={onSelect} onToggle={onToggle} onAction={onAction} depth={depth + 1} isEditable={isEditable} draggingId={draggingId} onDrop={onDrop} searchTerm={searchTerm} onImageClick={onImageClick} onBeginDrag={onBeginDrag} />))}</div>}
+      {node.isOpen && node.children && <div className="pl-12">{node.children.map(child => (<TreeNode key={child.id} node={child} selectedId={selectedId} onSelect={onSelect} onToggle={onToggle} onAction={onAction} depth={depth + 1} isEditable={isEditable} draggingId={draggingId} onDrop={onDrop} searchTerm={searchTerm} onImageClick={onImageClick} onBeginDrag={onBeginDrag} onCardClick={onCardClick} pendingMove={pendingMove} />))}</div>}
     </div>
   );
 };
@@ -419,8 +422,11 @@ export default function App() {
   const [showShareModal, setShowShareModal] = useState(false);
   const [globalPassword, setGlobalPassword] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
   const [draggingId, setDraggingId] = useState(null);
   const [imagePreview, setImagePreview] = useState('');
+  const [showSearchPanel, setShowSearchPanel] = useState(true);
+  const [moveSourceId, setMoveSourceId] = useState(null);
   const fileInputRef = useRef(null);
 
   const activePageIndex = pages.findIndex(p => p.id === activePageId);
@@ -473,10 +479,39 @@ export default function App() {
     updatePagesWithNewTree(node);
   }, [searchTerm]);
 
+  useEffect(() => {
+    if (!searchTerm.trim() || !activeTreeData) {
+      setSearchResults([]);
+      return;
+    }
+    const lower = searchTerm.toLowerCase();
+    const results = [];
+    const walk = (node, path) => {
+      const fullPath = [...path, node.title || '未命名'];
+      const match = (node.title || '').toLowerCase().includes(lower)
+        || (node.description || '').toLowerCase().includes(lower)
+        || (node.notes || '').toLowerCase().includes(lower);
+      if (match) {
+        results.push({ id: node.id, title: node.title || '未命名', path: fullPath.join(' / ') });
+      }
+      (node.children || []).forEach(child => walk(child, fullPath));
+    };
+    walk(activeTreeData, []);
+    setSearchResults(results);
+  }, [searchTerm, activeTreeData]);
+
   // --- Logic ---
   const findNode = (node, id) => {
     if (node.id === id) return node;
     if (node.children) { for (let child of node.children) { const found = findNode(child, id); if (found) return found; } }
+    return null;
+  };
+  const findParent = (node, targetId, parent = null) => {
+    if (node.id === targetId) return parent;
+    for (const child of node.children || []) {
+      const res = findParent(child, targetId, node);
+      if (res) return res;
+    }
     return null;
   };
   const updateNodeRec = (node, id, newData) => {
@@ -553,21 +588,31 @@ export default function App() {
     return { ...node, children: node.children.map(c => insertAsSibling(c, targetId, payload, position)) };
   };
 
+  const reorderSiblings = (node, parentId, dragId, targetId, position) => {
+    if (node.id === parentId && node.children) {
+      const arr = [...node.children];
+      const dragIdx = arr.findIndex(c => c.id === dragId);
+      const targetIdx = arr.findIndex(c => c.id === targetId);
+      if (dragIdx === -1 || targetIdx === -1) return node;
+      const [item] = arr.splice(dragIdx, 1);
+      const insertIdx = position === 'before'
+        ? targetIdx > dragIdx ? targetIdx - 1 : targetIdx
+        : targetIdx >= arr.length ? arr.length : targetIdx + (dragIdx < targetIdx ? 0 : 1);
+      arr.splice(insertIdx, 0, item);
+      return { ...node, children: arr };
+    }
+    if (node.children) return { ...node, children: node.children.map(c => reorderSiblings(c, parentId, dragId, targetId, position)) };
+    return node;
+  };
+
   const handleDropNode = (dragId, targetId, position) => {
     setDraggingId(null);
     if (!dragId || !targetId || !position) return;
     if (dragId === targetId || dragId === activeTreeData.id) return;
-    const draggedNode = findNode(activeTreeData, dragId);
-    if (!draggedNode) return;
-    if (containsId(draggedNode, targetId)) return;
-
-    const { removed, tree } = removeNodeFromTree(activeTreeData, dragId);
-    if (!removed || !tree) return;
-
-    const updated = position === 'inside'
-      ? insertAsChild(tree, targetId, removed)
-      : insertAsSibling(tree, targetId, removed, position);
-
+    const dragParent = findParent(activeTreeData, dragId);
+    const targetParent = findParent(activeTreeData, targetId);
+    if (!dragParent || !targetParent || dragParent.id !== targetParent.id) return;
+    const updated = reorderSiblings(activeTreeData, dragParent.id, dragId, targetId, position);
     updatePagesWithNewTree(updated);
     setSelectedId(dragId);
   };
@@ -582,6 +627,9 @@ export default function App() {
       updatePagesWithNewTree(addChildRec(activeTreeData, id));
       const parent = findNode(activeTreeData, id);
       if(parent && !parent.isOpen) handleUpdateNode(id, { ...parent, isOpen: true });
+    } else if (action === 'reparent') {
+      setMoveSourceId(id);
+      setStatusMsg('請點選新的父層區塊以變更層級');
     }
   };
 
@@ -633,6 +681,57 @@ export default function App() {
     }
   };
 
+  const openPathToNode = (node, targetId) => {
+    if (!node) return { found: false, node };
+    if (node.id === targetId) return { found: true, node: { ...node, isOpen: true } };
+    let found = false;
+    const children = (node.children || []).map(child => {
+      const res = openPathToNode(child, targetId);
+      if (res.found) found = true;
+      return res.node;
+    });
+    return { found, node: { ...node, isOpen: found || node.isOpen, children } };
+  };
+
+  const handleReparent = (sourceId, targetParentId) => {
+    if (sourceId === targetParentId) return;
+    if (sourceId === activeTreeData.id) return alert('根節點無法移動');
+    const sourceNode = findNode(activeTreeData, sourceId);
+    if (!sourceNode) return;
+    if (containsId(sourceNode, targetParentId)) return alert('無法移動到自己的子層');
+    const { removed, tree } = removeNodeFromTree(activeTreeData, sourceId);
+    if (!removed || !tree) return;
+    const updated = insertAsChild(tree, targetParentId, removed);
+    updatePagesWithNewTree(updated);
+    setSelectedId(sourceId);
+    setStatusMsg('已變更層級');
+    setTimeout(() => document.getElementById(`node-${sourceId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50);
+  };
+
+  const handleCardClick = (nodeId) => {
+    if (moveSourceId) {
+      if (nodeId === moveSourceId) {
+        setMoveSourceId(null);
+        setStatusMsg('已取消移動');
+        return;
+      }
+      handleReparent(moveSourceId, nodeId);
+      setMoveSourceId(null);
+      return;
+    }
+    setSelectedId(nodeId);
+    handleToggleNode(nodeId);
+  };
+
+  const handleJumpToNode = (nodeId) => {
+    const res = openPathToNode(activeTreeData, nodeId);
+    if (res.found) {
+      updatePagesWithNewTree(res.node);
+      setSelectedId(nodeId);
+      setTimeout(() => document.getElementById(`node-${nodeId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 80);
+    }
+  };
+
   const selectedNode = selectedId ? findNode(activeTreeData, selectedId) : null;
 
   return (
@@ -642,17 +741,12 @@ export default function App() {
           <div className="flex items-center gap-2 font-bold text-xl text-slate-800"><div className="bg-blue-600 rounded-md p-1.5"><Layout className="text-white" size={18} /></div><span>SOP Studio</span></div>
           <div className="flex items-center gap-1 overflow-x-auto max-w-xl no-scrollbar">
             {pages.map(page => (
-              <div key={page.id} onClick={() => { setActivePageId(page.id); setSelectedId(null); }} className={`group relative flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-medium cursor-pointer transition-all border ${activePageId === page.id ? 'bg-slate-100 text-slate-800 border-slate-200 shadow-sm' : 'bg-transparent text-slate-500 border-transparent hover:bg-slate-50'}`}>
+              <div key={page.id} onClick={() => { setActivePageId(page.id); setSelectedId(null); setMoveSourceId(null); }} className={`group relative flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-medium cursor-pointer transition-all border ${activePageId === page.id ? 'bg-slate-100 text-slate-800 border-slate-200 shadow-sm' : 'bg-transparent text-slate-500 border-transparent hover:bg-slate-50'}`}>
                 {page.name}
                 {isEditable && activePageId === page.id && (<div className="flex gap-1 ml-1 opacity-0 group-hover:opacity-100 transition-opacity"><button onClick={(e) => { e.stopPropagation(); editPageName(page.id); }} className="hover:text-blue-600"><Edit2 size={12} /></button><button onClick={(e) => { e.stopPropagation(); deletePage(page.id); }} className="hover:text-red-600"><X size={12} /></button></div>)}
               </div>
             ))}
             {isEditable && <button onClick={addNewPage} className="p-1.5 rounded-md hover:bg-slate-100 text-slate-400 hover:text-blue-600 transition-colors"><Plus size={16} /></button>}
-          </div>
-          <div className="hidden md:flex items-center bg-slate-100 border border-slate-200 rounded-lg px-2 py-1.5 text-sm text-slate-600 min-w-[220px]">
-            <Search size={16} className="text-slate-400 mr-2" />
-            <input value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="搜尋標題 / 內容 / 備註" className="bg-transparent outline-none flex-1" />
-            {searchTerm && <button onClick={() => setSearchTerm('')} className="text-slate-400 hover:text-slate-600"><X size={14} /></button>}
           </div>
         </div>
         <div className="flex items-center gap-3">
@@ -669,7 +763,43 @@ export default function App() {
       </header>
       <div className="h-6 bg-slate-50 border-b border-slate-200 flex items-center justify-center text-[10px] text-slate-400"><span>{statusMsg || (isEditable ? '編輯模式' : '預覽模式')}</span>{isLoading && <span className="ml-2 animate-pulse text-blue-500">處理中...</span>}</div>
       <main className="flex-1 flex overflow-hidden relative">
-        <div className="flex-1 overflow-auto bg-slate-50/50 p-8 md:p-12" onClick={() => setSelectedId(null)}>
+        <aside className={`bg-white border-r border-slate-200 h-full flex flex-col transition-all duration-200 ${showSearchPanel ? `w-[${SEARCH_PANEL_WIDTH}px]` : 'w-9'} overflow-hidden`}>
+          <div className="flex items-center justify-between px-2 py-2 border-b border-slate-100">
+            <button onClick={() => setShowSearchPanel(!showSearchPanel)} className="p-2 rounded-md hover:bg-slate-100 text-slate-500" title={showSearchPanel ? '收合搜尋' : '展開搜尋'}>
+              <Search size={16} />
+            </button>
+            {showSearchPanel && <span className="text-xs text-slate-500 font-medium">搜尋</span>}
+            {showSearchPanel && <button onClick={() => { setSearchTerm(''); setSearchResults([]); }} className="p-1 text-xs text-slate-400 hover:text-slate-600">清除</button>}
+          </div>
+          {showSearchPanel && (
+            <div className="flex-1 flex flex-col p-3 gap-3 overflow-y-auto">
+              <div className="flex items-center bg-slate-100 border border-slate-200 rounded-lg px-2 py-1.5 text-sm text-slate-600">
+                <Search size={16} className="text-slate-400 mr-2" />
+                <input value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="搜尋標題 / 內容 / 備註" className="bg-transparent outline-none flex-1 text-sm" />
+                {searchTerm && <button onClick={() => setSearchTerm('')} className="text-slate-400 hover:text-slate-600"><X size={14} /></button>}
+              </div>
+              <div className="flex items-center justify-between text-[11px] text-slate-400 px-1">
+                <span>符合項目：{searchResults.length}</span>
+                {moveSourceId && <span className="text-indigo-600 font-medium">選擇新父層中...</span>}
+              </div>
+              <div className="space-y-2">
+                {searchResults.map(item => (
+                  <button
+                    key={item.id}
+                    onClick={() => handleJumpToNode(item.id)}
+                    className="w-full text-left p-2 rounded-lg border border-slate-200 hover:border-blue-300 hover:bg-blue-50"
+                  >
+                    <div className="text-sm font-semibold text-slate-800 truncate">{item.title}</div>
+                    <div className="text-[11px] text-slate-500 truncate">{item.path}</div>
+                  </button>
+                ))}
+                {!searchTerm && <p className="text-xs text-slate-400 px-2">輸入關鍵字以搜尋</p>}
+                {searchTerm && searchResults.length === 0 && <p className="text-xs text-amber-500 px-2">沒有找到結果</p>}
+              </div>
+            </div>
+          )}
+        </aside>
+        <div className="flex-1 overflow-auto bg-slate-50/50 p-8 md:p-12" onClick={() => { setSelectedId(null); setMoveSourceId(null); }}>
            <div className="max-w-4xl mx-auto pb-32">
               {activeTreeData && (
                 <TreeNode
@@ -684,6 +814,8 @@ export default function App() {
                   searchTerm={searchTerm}
                   onImageClick={setImagePreview}
                   onBeginDrag={setDraggingId}
+                  onCardClick={handleCardClick}
+                  pendingMove={moveSourceId}
                 />
               )}
               <div className="pl-12 relative mt-4 opacity-50"><div className="absolute top-0 left-[-24px] h-8 w-px bg-slate-300 transform -translate-x-1/2" /><div className="ml-4 p-3 border-2 border-dashed border-slate-300 rounded-lg text-slate-400 text-xs text-center">END OF FLOW</div></div>
