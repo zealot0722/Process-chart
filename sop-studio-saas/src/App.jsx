@@ -6,7 +6,7 @@ import {
   Layout, Settings, Share2, Globe, Check, Lock, Unlock, Shield,
   FileText, MoreHorizontal, LayoutGrid,
   Download, Upload, CloudUpload, CloudDownload, Palette,
-  GitCommit, GitPullRequest, PlusCircle
+  GitCommit, GitPullRequest, PlusCircle, Search, Move
 } from 'lucide-react';
 
 // Firebase Imports
@@ -37,6 +37,7 @@ const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 const generateId = () => `node-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 const generateShareId = () => Math.random().toString(36).substr(2, 6).toUpperCase();
 const LOCAL_SAVE_KEY = 'sop_studio_local_draft';
+const DRAG_DATA_KEY = 'sop_node_id';
 
 // --- Constants & Styles ---
 const STYLE_OPTIONS = {
@@ -299,11 +300,31 @@ const InspectorPanel = ({ selectedNode, onUpdate, onClose, isEditable }) => {
 };
 
 // --- Component: Tree Node ---
-const TreeNode = ({ node, selectedId, onSelect, onToggle, onAction, depth = 0, isEditable }) => {
+const TreeNode = ({
+  node,
+  selectedId,
+  onSelect,
+  onToggle,
+  onAction,
+  depth = 0,
+  isEditable,
+  draggingId,
+  onDrop,
+  searchTerm,
+  onImageClick,
+  onBeginDrag
+}) => {
   const isSelected = selectedId === node.id;
   const nodeStyle = { bgColor: 'bg-white', borderColor: 'border-slate-200', fontFamily: 'font-sans', titleSize: 'text-lg', contentSize: 'text-base', ...node.style };
   const images = node.images || [];
   const links = node.links || [];
+  const hasSearchTerm = (searchTerm || '').trim().length > 0;
+  const lowerTerm = (searchTerm || '').toLowerCase();
+  const hasMatch = hasSearchTerm && (
+    (node.title || '').toLowerCase().includes(lowerTerm) ||
+    (node.description || '').toLowerCase().includes(lowerTerm) ||
+    (node.notes || '').toLowerCase().includes(lowerTerm)
+  );
 
   const getIcon = () => {
     if (node.type === 'role') return <Box className="w-5 h-5 text-blue-600" />;
@@ -317,13 +338,22 @@ const TreeNode = ({ node, selectedId, onSelect, onToggle, onAction, depth = 0, i
       {depth > 0 && <div className="absolute top-[28px] left-[-24px] w-6 h-px bg-slate-300" />}
       <div className="mb-4 relative group">
         <div
+          className="h-2 -mt-2 mb-1"
+          onDragOver={(e) => { if (isEditable && draggingId) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; } }}
+          onDrop={(e) => { e.preventDefault(); if (isEditable) onDrop(e.dataTransfer.getData(DRAG_DATA_KEY), node.id, 'before'); }}
+        />
+        <div
+          draggable={isEditable}
+          onDragStart={(e) => { if (isEditable) { e.dataTransfer.setData(DRAG_DATA_KEY, node.id); e.dataTransfer.effectAllowed = 'move'; onBeginDrag(node.id); } }}
+          onDragEnd={() => onDrop(null, null, null)}
+          onDragOver={(e) => { if (isEditable && draggingId) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; } }}
+          onDrop={(e) => { e.preventDefault(); if (isEditable) onDrop(e.dataTransfer.getData(DRAG_DATA_KEY), node.id, 'inside'); }}
           onClick={(e) => {
             e.stopPropagation();
             onSelect(node.id);
             onToggle(node.id);
           }}
-          className={`relative rounded-xl border p-4 transition-all duration-200 cursor-pointer ${nodeStyle.bgColor} ${nodeStyle.fontFamily} ${isSelected ? 'ring-2 ring-blue-500 ring-offset-2 shadow-lg scale-[1.01]' : 'shadow-sm hover:shadow-md hover:border-blue-300'} ${nodeStyle.borderColor.includes('border-l-4') ? nodeStyle.borderColor : `border-l-4 ${nodeStyle.borderColor}`}`}
-        >
+          className={`relative rounded-xl border p-4 transition-all duration-200 cursor-pointer ${nodeStyle.bgColor} ${nodeStyle.fontFamily} ${isSelected ? 'ring-2 ring-blue-500 ring-offset-2 shadow-lg scale-[1.01]' : 'shadow-sm hover:shadow-md hover:border-blue-300'} ${nodeStyle.borderColor.includes('border-l-4') ? nodeStyle.borderColor : `border-l-4 ${nodeStyle.borderColor}`} ${hasMatch ? 'border-dashed border-amber-400 shadow-[0_0_0_3px_rgba(251,191,36,0.25)]' : ''}`}>
           <div className="flex items-start justify-between gap-3">
              <div className="flex items-center gap-3 flex-1">
                 <div className={`p-2 rounded-lg shrink-0 ${isSelected ? 'bg-blue-50' : 'bg-white/80 border border-slate-100'}`}>{getIcon()}</div>
@@ -346,13 +376,32 @@ const TreeNode = ({ node, selectedId, onSelect, onToggle, onAction, depth = 0, i
             <div className="mt-3 pl-[3.25rem] animate-fadeIn">
                {node.description && <p className={`text-slate-600 whitespace-pre-line leading-relaxed mb-2 ${nodeStyle.contentSize}`}>{node.description}</p>}
                {node.notes && <div className="flex items-start gap-2 p-2.5 bg-amber-50 border border-amber-100 rounded-md text-amber-900 text-sm mb-2"><AlertTriangle size={16} className="shrink-0 mt-0.5 text-amber-600" /><p className="whitespace-pre-line">{node.notes}</p></div>}
-               {images.length > 0 && <div className="flex gap-2 overflow-x-auto pb-2 mt-2">{images.map((img, idx) => (<div key={idx} className="flex-none w-32 h-24 rounded-lg border border-slate-200 overflow-hidden bg-white"><img src={img} className="w-full h-full object-cover" /></div>))}</div>}
+               {images.length > 0 && (
+                 <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-2">
+                   {images.map((img, idx) => (
+                     <button
+                       type="button"
+                       key={idx}
+                       onClick={(e) => { e.stopPropagation(); onImageClick(img); }}
+                       className="relative group rounded-lg border border-slate-200 overflow-hidden bg-white shadow-sm"
+                     >
+                       <img src={img} className="w-full h-24 object-cover" />
+                       <span className="absolute bottom-1 right-1 bg-slate-900/70 text-white text-[10px] px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100">放大</span>
+                     </button>
+                   ))}
+                 </div>
+               )}
                {links.length > 0 && <div className="flex flex-wrap gap-2 mt-2">{links.map((link, idx) => (<a key={idx} href={link.url} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} className="inline-flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 border border-blue-100 px-2 py-1 rounded transition-colors"><ExternalLink size={12} /> {link.title}</a>))}</div>}
             </div>
           )}
         </div>
       </div>
-      {node.isOpen && node.children && <div className="pl-12">{node.children.map(child => (<TreeNode key={child.id} node={child} selectedId={selectedId} onSelect={onSelect} onToggle={onToggle} onAction={onAction} depth={depth + 1} isEditable={isEditable} />))}</div>}
+      <div
+        className="h-2 mt-1"
+        onDragOver={(e) => { if (isEditable && draggingId) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; } }}
+        onDrop={(e) => { e.preventDefault(); if (isEditable) onDrop(e.dataTransfer.getData(DRAG_DATA_KEY), node.id, 'after'); }}
+      />
+      {node.isOpen && node.children && <div className="pl-12">{node.children.map(child => (<TreeNode key={child.id} node={child} selectedId={selectedId} onSelect={onSelect} onToggle={onToggle} onAction={onAction} depth={depth + 1} isEditable={isEditable} draggingId={draggingId} onDrop={onDrop} searchTerm={searchTerm} onImageClick={onImageClick} onBeginDrag={onBeginDrag} />))}</div>}
     </div>
   );
 };
@@ -369,6 +418,9 @@ export default function App() {
   const [statusMsg, setStatusMsg] = useState('');
   const [showShareModal, setShowShareModal] = useState(false);
   const [globalPassword, setGlobalPassword] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [draggingId, setDraggingId] = useState(null);
+  const [imagePreview, setImagePreview] = useState('');
   const fileInputRef = useRef(null);
 
   const activePageIndex = pages.findIndex(p => p.id === activePageId);
@@ -402,6 +454,24 @@ export default function App() {
       console.warn('Local restore failed', err);
     }
   }, []);
+
+  useEffect(() => {
+    if (!searchTerm.trim() || !activeTreeData) return;
+    const lower = searchTerm.toLowerCase();
+    const expandMatches = (node) => {
+      const childResults = (node.children || []).map(expandMatches);
+      const childMatch = childResults.some(r => r.match);
+      const selfMatch = (node.title || '').toLowerCase().includes(lower)
+        || (node.description || '').toLowerCase().includes(lower)
+        || (node.notes || '').toLowerCase().includes(lower);
+      return {
+        node: { ...node, isOpen: selfMatch || childMatch || node.isOpen, children: childResults.map(r => r.node) },
+        match: selfMatch || childMatch
+      };
+    };
+    const { node } = expandMatches(activeTreeData);
+    updatePagesWithNewTree(node);
+  }, [searchTerm]);
 
   // --- Logic ---
   const findNode = (node, id) => {
@@ -445,6 +515,61 @@ export default function App() {
     }
     if (node.children) return { ...node, children: node.children.map(c => addChildRec(c, parentId)) };
     return node;
+  };
+
+  const containsId = (node, targetId) => {
+    if (!node) return false;
+    if (node.id === targetId) return true;
+    return (node.children || []).some(child => containsId(child, targetId));
+  };
+
+  const removeNodeFromTree = (node, targetId) => {
+    if (node.id === targetId) return { removed: node, tree: null };
+    if (!node.children) return { removed: null, tree: node };
+    let removed = null;
+    const newChildren = [];
+    for (const child of node.children) {
+      const res = removeNodeFromTree(child, targetId);
+      if (res.removed) removed = res.removed;
+      if (res.tree) newChildren.push(res.tree);
+    }
+    return { removed, tree: { ...node, children: newChildren } };
+  };
+
+  const insertAsChild = (node, targetId, payload) => {
+    if (node.id === targetId) return { ...node, isOpen: true, children: [...(node.children || []), payload] };
+    if (node.children) return { ...node, children: node.children.map(c => insertAsChild(c, targetId, payload)) };
+    return node;
+  };
+
+  const insertAsSibling = (node, targetId, payload, position) => {
+    if (!node.children) return node;
+    const idx = node.children.findIndex(c => c.id === targetId);
+    if (idx !== -1) {
+      const arr = [...node.children];
+      arr.splice(position === 'before' ? idx : idx + 1, 0, payload);
+      return { ...node, children: arr };
+    }
+    return { ...node, children: node.children.map(c => insertAsSibling(c, targetId, payload, position)) };
+  };
+
+  const handleDropNode = (dragId, targetId, position) => {
+    setDraggingId(null);
+    if (!dragId || !targetId || !position) return;
+    if (dragId === targetId || dragId === activeTreeData.id) return;
+    const draggedNode = findNode(activeTreeData, dragId);
+    if (!draggedNode) return;
+    if (containsId(draggedNode, targetId)) return;
+
+    const { removed, tree } = removeNodeFromTree(activeTreeData, dragId);
+    if (!removed || !tree) return;
+
+    const updated = position === 'inside'
+      ? insertAsChild(tree, targetId, removed)
+      : insertAsSibling(tree, targetId, removed, position);
+
+    updatePagesWithNewTree(updated);
+    setSelectedId(dragId);
   };
   const handleNodeAction = (action, id) => {
     if (action === 'delete') {
@@ -524,6 +649,11 @@ export default function App() {
             ))}
             {isEditable && <button onClick={addNewPage} className="p-1.5 rounded-md hover:bg-slate-100 text-slate-400 hover:text-blue-600 transition-colors"><Plus size={16} /></button>}
           </div>
+          <div className="hidden md:flex items-center bg-slate-100 border border-slate-200 rounded-lg px-2 py-1.5 text-sm text-slate-600 min-w-[220px]">
+            <Search size={16} className="text-slate-400 mr-2" />
+            <input value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="搜尋標題 / 內容 / 備註" className="bg-transparent outline-none flex-1" />
+            {searchTerm && <button onClick={() => setSearchTerm('')} className="text-slate-400 hover:text-slate-600"><X size={14} /></button>}
+          </div>
         </div>
         <div className="flex items-center gap-3">
           <div className="hidden lg:flex items-center bg-slate-100 rounded-md px-3 py-1.5 text-xs w-48 border border-slate-200"><input value={cloudId} onChange={e => setCloudId(e.target.value.toUpperCase())} placeholder="CODE" className="bg-transparent border-none outline-none text-slate-700 w-full font-mono" />{cloudId && <button onClick={handleCloudLoad} className="text-blue-500 hover:text-blue-700"><Check size={14}/></button>}</div>
@@ -541,13 +671,37 @@ export default function App() {
       <main className="flex-1 flex overflow-hidden relative">
         <div className="flex-1 overflow-auto bg-slate-50/50 p-8 md:p-12" onClick={() => setSelectedId(null)}>
            <div className="max-w-4xl mx-auto pb-32">
-              {activeTreeData && <TreeNode node={activeTreeData} selectedId={selectedId} onSelect={setSelectedId} onToggle={handleToggleNode} onAction={handleNodeAction} isEditable={isEditable} />}
+              {activeTreeData && (
+                <TreeNode
+                  node={activeTreeData}
+                  selectedId={selectedId}
+                  onSelect={setSelectedId}
+                  onToggle={handleToggleNode}
+                  onAction={handleNodeAction}
+                  isEditable={isEditable}
+                  draggingId={draggingId}
+                  onDrop={handleDropNode}
+                  searchTerm={searchTerm}
+                  onImageClick={setImagePreview}
+                  onBeginDrag={setDraggingId}
+                />
+              )}
               <div className="pl-12 relative mt-4 opacity-50"><div className="absolute top-0 left-[-24px] h-8 w-px bg-slate-300 transform -translate-x-1/2" /><div className="ml-4 p-3 border-2 border-dashed border-slate-300 rounded-lg text-slate-400 text-xs text-center">END OF FLOW</div></div>
            </div>
         </div>
         {selectedId && <InspectorPanel selectedNode={selectedNode} onUpdate={handleUpdateNode} onClose={() => setSelectedId(null)} isEditable={isEditable} />}
       </main>
       <ShareModal isOpen={showShareModal} onClose={() => setShowShareModal(false)} cloudId={cloudId} onGenerateLink={handleCloudSave} />
+      {imagePreview && (
+        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={() => setImagePreview('')}>
+          <div className="relative bg-white rounded-xl shadow-2xl max-w-4xl w-full p-4" onClick={(e) => e.stopPropagation()}>
+            <button onClick={() => setImagePreview('')} className="absolute top-2 right-2 bg-white/80 hover:bg-white text-slate-600 border border-slate-200 rounded-full p-1">
+              <X size={18} />
+            </button>
+            <img src={imagePreview} className="w-full max-h-[70vh] object-contain rounded-lg" />
+          </div>
+        </div>
+      )}
       <style>{`@keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }.animate-fadeIn { animation: fadeIn 0.2s ease-out forwards; } ::-webkit-scrollbar { width: 6px; height: 6px; } ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; } .no-scrollbar::-webkit-scrollbar { display: none; }`}</style>
     </div>
   );
