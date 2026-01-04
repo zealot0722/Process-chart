@@ -431,6 +431,7 @@ export default function App() {
   const [statusMsg, setStatusMsg] = useState('');
   const [showShareModal, setShowShareModal] = useState(false);
   const [globalPassword, setGlobalPassword] = useState('');
+  const [tabOverflow, setTabOverflow] = useState({ canScrollLeft: false, canScrollRight: false });
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [imagePreview, setImagePreview] = useState('');
@@ -770,6 +771,21 @@ export default function App() {
     }
   };
 
+  const updateTabOverflow = () => {
+    const el = tabBarRef.current;
+    if (!el) return;
+    const canScrollLeft = el.scrollLeft > 2;
+    const canScrollRight = el.scrollLeft + el.clientWidth < el.scrollWidth - 2;
+    setTabOverflow({ canScrollLeft, canScrollRight });
+  };
+
+  useEffect(() => {
+    const handleResize = () => updateTabOverflow();
+    window.addEventListener('resize', handleResize);
+    updateTabOverflow();
+    return () => window.removeEventListener('resize', handleResize);
+  }, [pages]);
+
   const handleTabMouseDown = (e) => {
     const el = tabBarRef.current;
     if (!el) return;
@@ -783,29 +799,58 @@ export default function App() {
     setSelectedId(null);
   };
 
+  const scrollTabs = (direction) => {
+    const el = tabBarRef.current;
+    if (!el) return;
+    const delta = direction === 'left' ? -180 : 180;
+    el.scrollTo({ left: Math.max(0, el.scrollLeft + delta), behavior: 'smooth' });
+    setTimeout(updateTabOverflow, 220);
+  };
+
   const selectedNode = selectedId ? findNode(activeTreeData, selectedId) : null;
 
   return (
     <div className="h-screen w-full flex flex-col bg-slate-50 overflow-hidden font-sans text-slate-800">
       <header className="h-14 bg-white border-b border-slate-200 flex items-center justify-between px-4 shrink-0 z-30">
-        <div className="flex items-center gap-6">
+        <div className="flex items-end gap-6 relative">
           <div className="flex items-center gap-2 font-bold text-xl text-slate-800"><div className="bg-blue-600 rounded-md p-1.5"><Layout className="text-white" size={18} /></div><span>SOP Studio</span></div>
-          <div
-            ref={tabBarRef}
-            onMouseDown={handleTabMouseDown}
-            className="flex items-center gap-2 overflow-x-auto no-scrollbar cursor-grab active:cursor-grabbing"
-          >
-            {pages.map(page => (
-              <div
-                key={page.id}
-                onClick={() => handleTabClick(page.id)}
-                className={`group relative flex items-center gap-2 px-3 py-1 rounded-lg text-sm font-medium cursor-pointer transition-all border whitespace-nowrap ${activePageId === page.id ? 'bg-slate-100 text-slate-800 border-slate-200 shadow-sm' : 'bg-transparent text-slate-500 border-transparent hover:bg-slate-50'}`}
+          <div className="relative w-[360px] sm:w-[480px] md:w-[560px] lg:w-[640px] max-w-[60vw]">
+            <div
+              ref={tabBarRef}
+              onMouseDown={handleTabMouseDown}
+              onScroll={updateTabOverflow}
+              className="flex items-center gap-2 overflow-x-auto no-scrollbar cursor-grab active:cursor-grabbing pr-8"
+            >
+              {pages.map(page => (
+                <div
+                  key={page.id}
+                  onClick={() => handleTabClick(page.id)}
+                  className={`group relative flex items-center gap-2 px-3 py-1 rounded-lg text-sm font-medium cursor-pointer transition-all border whitespace-nowrap ${activePageId === page.id ? 'bg-slate-100 text-slate-800 border-slate-200 shadow-sm' : 'bg-transparent text-slate-500 border-transparent hover:bg-slate-50'}`}
+                >
+                  {page.name}
+                  {isEditable && activePageId === page.id && (<div className="flex gap-1 ml-1 opacity-0 group-hover:opacity-100 transition-opacity"><button onClick={(e) => { e.stopPropagation(); editPageName(page.id); }} className="hover:text-blue-600"><Edit2 size={12} /></button><button onClick={(e) => { e.stopPropagation(); deletePage(page.id); }} className="hover:text-red-600"><X size={12} /></button></div>)}
+                </div>
+              ))}
+              {isEditable && <button onClick={addNewPage} className="p-1.5 rounded-md hover:bg-slate-100 text-slate-400 hover:text-blue-600 transition-colors"><Plus size={16} /></button>}
+            </div>
+            {tabOverflow.canScrollLeft && (
+              <button
+                onClick={() => scrollTabs('left')}
+                className="absolute -bottom-3 left-0 bg-white border border-slate-200 shadow-sm rounded-full p-1 text-slate-500 hover:text-blue-600"
+                aria-label="向左捲動頁籤"
               >
-                {page.name}
-                {isEditable && activePageId === page.id && (<div className="flex gap-1 ml-1 opacity-0 group-hover:opacity-100 transition-opacity"><button onClick={(e) => { e.stopPropagation(); editPageName(page.id); }} className="hover:text-blue-600"><Edit2 size={12} /></button><button onClick={(e) => { e.stopPropagation(); deletePage(page.id); }} className="hover:text-red-600"><X size={12} /></button></div>)}
-              </div>
-            ))}
-            {isEditable && <button onClick={addNewPage} className="p-1.5 rounded-md hover:bg-slate-100 text-slate-400 hover:text-blue-600 transition-colors"><Plus size={16} /></button>}
+                <ChevronRight className="rotate-180" size={16} />
+              </button>
+            )}
+            {tabOverflow.canScrollRight && (
+              <button
+                onClick={() => scrollTabs('right')}
+                className="absolute -bottom-3 right-0 bg-white border border-slate-200 shadow-sm rounded-full p-1 text-slate-500 hover:text-blue-600"
+                aria-label="向右捲動頁籤"
+              >
+                <ChevronRight size={16} />
+              </button>
+            )}
           </div>
         </div>
         <div className="flex items-center gap-3">
