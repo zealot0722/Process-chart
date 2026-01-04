@@ -320,12 +320,20 @@ const TreeNode = ({
   onJumpToNode
 }) => {
   const [showLinkPicker, setShowLinkPicker] = useState(false);
+  const pickerWrapperRef = useRef(null);
   const isSelected = selectedId === node.id;
   const nodeStyle = { bgColor: 'bg-white', borderColor: 'border-slate-200', fontFamily: 'font-sans', titleSize: 'text-lg', contentSize: 'text-base', ...node.style };
   const images = node.images || [];
   const links = node.links || [];
-  const jumpTarget = node.jumpTargetId ? nodeIndex.find(item => item.id === node.jumpTargetId) : null;
-  const hasJumpTarget = !!jumpTarget;
+  const jumpTargetIds = Array.isArray(node.jumpTargetIds)
+    ? node.jumpTargetIds
+    : node.jumpTargetId
+      ? [node.jumpTargetId]
+      : [];
+  const jumpTargets = jumpTargetIds
+    .map(id => nodeIndex.find(item => item.id === id))
+    .filter(Boolean);
+  const hasJumpTarget = jumpTargets.length > 0;
   const selectableTargets = nodeIndex.filter(item => item.id !== node.id);
   const canMoveUp = isEditable && parentId && siblingIndex > 0;
   const canMoveDown = isEditable && parentId && siblingIndex < siblingCount - 1;
@@ -338,6 +346,18 @@ const TreeNode = ({
     (node.description || '').toLowerCase().includes(lowerTerm) ||
     (node.notes || '').toLowerCase().includes(lowerTerm)
   );
+  const jumpPaddingStyle = hasJumpTarget ? { paddingRight: '4rem', paddingBottom: `${16 + jumpTargets.length * 28}px` } : {};
+
+  useEffect(() => {
+    if (!showLinkPicker) return;
+    const handleClickOutside = (e) => {
+      if (pickerWrapperRef.current && !pickerWrapperRef.current.contains(e.target)) {
+        setShowLinkPicker(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showLinkPicker]);
 
   const getIcon = () => {
     if (node.type === 'role') return <Box className="w-5 h-5 text-blue-600" />;
@@ -356,7 +376,8 @@ const TreeNode = ({
             e.stopPropagation();
             onCardClick(node.id);
           }}
-          className={`relative rounded-xl border p-4 ${hasJumpTarget ? 'pr-14 pb-14' : ''} transition-all duration-200 cursor-pointer ${nodeStyle.bgColor} ${nodeStyle.fontFamily} ${isSelected ? 'ring-2 ring-blue-500 ring-offset-2 shadow-lg scale-[1.01]' : 'shadow-sm hover:shadow-md hover:border-blue-300'} ${nodeStyle.borderColor.includes('border-l-4') ? nodeStyle.borderColor : `border-l-4 ${nodeStyle.borderColor}`} ${hasMatch ? 'border-dashed border-amber-400 shadow-[0_0_0_3px_rgba(251,191,36,0.25)]' : ''}`}>
+          style={jumpPaddingStyle}
+          className={`relative rounded-xl border p-4 transition-all duration-200 cursor-pointer ${nodeStyle.bgColor} ${nodeStyle.fontFamily} ${isSelected ? 'ring-2 ring-blue-500 ring-offset-2 shadow-lg scale-[1.01]' : 'shadow-sm hover:shadow-md hover:border-blue-300'} ${nodeStyle.borderColor.includes('border-l-4') ? nodeStyle.borderColor : `border-l-4 ${nodeStyle.borderColor}`} ${hasMatch ? 'border-dashed border-amber-400 shadow-[0_0_0_3px_rgba(251,191,36,0.25)]' : ''}`}>
           <div className="flex items-start justify-between gap-3">
              <div className="flex items-start gap-3 flex-1">
                 {isEditable && parentId && (
@@ -389,9 +410,9 @@ const TreeNode = ({
                      <button onClick={(e) => { e.stopPropagation(); onAction('addChild', node.id); }} className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded" title="新增子層"><PlusCircle size={16} /></button>
                      <button onClick={(e) => { e.stopPropagation(); onAction('levelUp', node.id); }} className={`p-1.5 rounded text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 ${!canLevelUp ? 'opacity-40 cursor-not-allowed' : ''}`} disabled={!canLevelUp} title="提升層級"><IndentDecrease size={16} /></button>
                      <button onClick={(e) => { e.stopPropagation(); onAction('levelDown', node.id); }} className={`p-1.5 rounded text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 ${!canLevelDown ? 'opacity-40 cursor-not-allowed' : ''}`} disabled={!canLevelDown} title="降低層級"><IndentIncrease size={16} /></button>
-                     <div className="relative">
+                     <div className="relative" ref={pickerWrapperRef}>
                        <button
-                         onClick={(e) => { e.stopPropagation(); setShowLinkPicker((v) => !v); }}
+                         onClick={(e) => { e.stopPropagation(); setShowLinkPicker(true); }}
                          className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded"
                          title="設定指向區塊"
                        >
@@ -402,9 +423,9 @@ const TreeNode = ({
                            <div className="flex items-center justify-between px-3 py-2 border-b border-slate-100 text-xs text-slate-500">
                              <span>指向其他區塊</span>
                              <div className="flex items-center gap-1">
-                               {node.jumpTargetId && (
+                               {jumpTargets.length > 0 && (
                                  <button
-                                   onClick={(e) => { e.stopPropagation(); onSelectJumpTarget?.(node.id, null); setShowLinkPicker(false); }}
+                                   onClick={(e) => { e.stopPropagation(); onSelectJumpTarget?.(node.id, null, 'clearAll'); }}
                                    className="text-amber-600 hover:text-amber-700"
                                  >
                                    清除
@@ -415,30 +436,42 @@ const TreeNode = ({
                                </button>
                              </div>
                            </div>
-                           {jumpTarget && (
-                             <div className="mt-2 mx-2 flex items-center gap-2 rounded-md bg-indigo-50 px-3 py-2 text-[11px] text-indigo-800">
-                               <button
-                                 onClick={(e) => { e.stopPropagation(); onSelectJumpTarget?.(node.id, null); setShowLinkPicker(false); }}
-                                 className="text-indigo-500 hover:text-indigo-700"
-                                 title="取消指向"
-                               >
-                                 <X size={12} />
-                               </button>
-                               <span className="font-semibold truncate">{jumpTarget.title}</span>
+                           {jumpTargets.length > 0 && (
+                             <div className="mt-2 mx-2 flex flex-wrap gap-2">
+                               {jumpTargets.map(target => (
+                                 <div key={target.id} className="flex items-center gap-1 rounded-md bg-indigo-50 px-2 py-1 text-[11px] text-indigo-800">
+                                   <button
+                                     onClick={(e) => { e.stopPropagation(); onSelectJumpTarget?.(node.id, target.id, 'removeOne'); }}
+                                     className="text-indigo-500 hover:text-indigo-700"
+                                     title="取消指向"
+                                   >
+                                     <X size={12} />
+                                   </button>
+                                   <span className="font-semibold truncate max-w-[8rem]">{target.title}</span>
+                                 </div>
+                               ))}
                              </div>
                            )}
                            <div className="max-h-64 overflow-y-auto p-2 space-y-1">
                              {selectableTargets.length === 0 && <div className="text-xs text-slate-400 px-2 py-1">目前沒有其他區塊</div>}
-                             {selectableTargets.map(opt => (
-                               <button
-                                 key={opt.id}
-                                 onClick={(e) => { e.stopPropagation(); onSelectJumpTarget?.(node.id, opt.id); setShowLinkPicker(false); }}
-                                 className="w-full text-left p-2 rounded-md hover:bg-slate-100 border border-transparent hover:border-blue-200"
-                               >
-                                 <div className="text-sm font-semibold text-slate-800 truncate">{opt.title}</div>
-                                 <div className="text-[11px] text-slate-500 truncate">{opt.path}</div>
-                               </button>
-                             ))}
+                             {selectableTargets.map(opt => {
+                               const isPicked = jumpTargetIds.includes(opt.id);
+                               return (
+                                 <button
+                                   key={opt.id}
+                                   onClick={(e) => { e.stopPropagation(); onSelectJumpTarget?.(node.id, opt.id, 'toggle'); }}
+                                   className={`w-full text-left p-2 rounded-md border ${isPicked ? 'bg-indigo-50 border-indigo-200' : 'border-transparent hover:bg-slate-100 hover:border-blue-200'}`}
+                                 >
+                                   <div className="flex items-center justify-between gap-2">
+                                     <div>
+                                       <div className="text-sm font-semibold text-slate-800 truncate">{opt.title}</div>
+                                       <div className="text-[11px] text-slate-500 truncate">{opt.path}</div>
+                                     </div>
+                                     {isPicked && <Check size={14} className="text-indigo-500 shrink-0" />}
+                                   </div>
+                                 </button>
+                               );
+                             })}
                            </div>
                          </div>
                        )}
@@ -474,12 +507,17 @@ const TreeNode = ({
             </div>
           )}
           {hasJumpTarget && (
-            <button
-              onClick={(e) => { e.stopPropagation(); onJumpToNode?.(jumpTarget.id); }}
-              className="absolute bottom-3 right-3 inline-flex items-center gap-1 text-xs text-blue-700 bg-blue-50 border border-blue-100 px-2 py-1 rounded-full shadow-sm hover:bg-blue-100"
-            >
-              <ExternalLink size={12} /> 跳轉至 {jumpTarget.title}
-            </button>
+            <div className="absolute bottom-3 right-3 flex flex-col items-end gap-2">
+              {jumpTargets.map(target => (
+                <button
+                  key={target.id}
+                  onClick={(e) => { e.stopPropagation(); onJumpToNode?.(target.id); }}
+                  className="inline-flex items-center gap-1 text-xs text-blue-700 bg-blue-50 border border-blue-100 px-2 py-1 rounded-full shadow-sm hover:bg-blue-100"
+                >
+                  <ExternalLink size={12} /> 跳轉至 {target.title}
+                </button>
+              ))}
+            </div>
           )}
         </div>
       </div>
@@ -883,13 +921,28 @@ export default function App() {
     }
   };
 
-  const handleSelectJumpTarget = (nodeId, targetId) => {
+  const handleSelectJumpTarget = (nodeId, targetId, action = 'toggle') => {
     if (targetId === nodeId) { setStatusMsg('無法指向自己'); return; }
     const node = findNode(activeTreeData, nodeId);
     if (!node) return;
-    handleUpdateNode(nodeId, { ...node, jumpTargetId: targetId || null });
-    setStatusMsg(targetId ? '已設定跳轉區塊' : '已清除跳轉');
-    if (targetId) showToast('已設定跳轉入口');
+    const existing = Array.isArray(node.jumpTargetIds)
+      ? [...node.jumpTargetIds]
+      : node.jumpTargetId
+        ? [node.jumpTargetId]
+        : [];
+    let next = existing;
+    if (action === 'clearAll' || targetId === null) {
+      next = [];
+    } else if (action === 'removeOne') {
+      next = existing.filter(id => id !== targetId);
+    } else {
+      next = existing.includes(targetId)
+        ? existing.filter(id => id !== targetId)
+        : [...existing, targetId];
+    }
+    handleUpdateNode(nodeId, { ...node, jumpTargetIds: next, jumpTargetId: undefined });
+    setStatusMsg(next.length ? '已更新跳轉區塊' : '已清除跳轉');
+    if (next.length) showToast('已更新跳轉入口');
   };
 
   const updateTabOverflow = () => {
