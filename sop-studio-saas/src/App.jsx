@@ -436,6 +436,8 @@ export default function App() {
   const [imagePreview, setImagePreview] = useState('');
   const [showSearchPanel, setShowSearchPanel] = useState(true);
   const fileInputRef = useRef(null);
+  const tabBarRef = useRef(null);
+  const tabDragState = useRef({ isDown: false, startX: 0, scrollLeft: 0, moved: false });
 
   const activePageIndex = pages.findIndex(p => p.id === activePageId);
   const activeTreeData = pages[activePageIndex]?.root;
@@ -449,6 +451,33 @@ export default function App() {
     };
     initAuth();
     if (auth) return onAuthStateChanged(auth, setUser);
+  }, []);
+
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      if (!tabDragState.current.isDown) return;
+      e.preventDefault();
+      const el = tabBarRef.current;
+      if (!el) return;
+      const x = e.pageX - el.offsetLeft;
+      const walk = x - tabDragState.current.startX;
+      if (Math.abs(walk) > 2) tabDragState.current.moved = true;
+      el.scrollLeft = tabDragState.current.scrollLeft - walk;
+    };
+
+    const handleMouseUp = () => {
+      if (!tabDragState.current.isDown) return;
+      tabDragState.current.isDown = false;
+      tabBarRef.current?.classList.remove('cursor-grabbing');
+      setTimeout(() => { tabDragState.current.moved = false; }, 0);
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
   }, []);
 
   useEffect(() => {
@@ -741,6 +770,19 @@ export default function App() {
     }
   };
 
+  const handleTabMouseDown = (e) => {
+    const el = tabBarRef.current;
+    if (!el) return;
+    tabDragState.current = { isDown: true, startX: e.pageX - el.offsetLeft, scrollLeft: el.scrollLeft, moved: false };
+    el.classList.add('cursor-grabbing');
+  };
+
+  const handleTabClick = (pageId) => {
+    if (tabDragState.current.moved) return;
+    setActivePageId(pageId);
+    setSelectedId(null);
+  };
+
   const selectedNode = selectedId ? findNode(activeTreeData, selectedId) : null;
 
   return (
@@ -748,9 +790,17 @@ export default function App() {
       <header className="h-14 bg-white border-b border-slate-200 flex items-center justify-between px-4 shrink-0 z-30">
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-2 font-bold text-xl text-slate-800"><div className="bg-blue-600 rounded-md p-1.5"><Layout className="text-white" size={18} /></div><span>SOP Studio</span></div>
-          <div className="flex items-center gap-1 overflow-x-auto max-w-xl no-scrollbar">
+          <div
+            ref={tabBarRef}
+            onMouseDown={handleTabMouseDown}
+            className="flex items-center gap-2 overflow-x-auto no-scrollbar cursor-grab active:cursor-grabbing"
+          >
             {pages.map(page => (
-              <div key={page.id} onClick={() => { setActivePageId(page.id); setSelectedId(null); }} className={`group relative flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-medium cursor-pointer transition-all border ${activePageId === page.id ? 'bg-slate-100 text-slate-800 border-slate-200 shadow-sm' : 'bg-transparent text-slate-500 border-transparent hover:bg-slate-50'}`}>
+              <div
+                key={page.id}
+                onClick={() => handleTabClick(page.id)}
+                className={`group relative flex items-center gap-2 px-3 py-1 rounded-lg text-sm font-medium cursor-pointer transition-all border whitespace-nowrap ${activePageId === page.id ? 'bg-slate-100 text-slate-800 border-slate-200 shadow-sm' : 'bg-transparent text-slate-500 border-transparent hover:bg-slate-50'}`}
+              >
                 {page.name}
                 {isEditable && activePageId === page.id && (<div className="flex gap-1 ml-1 opacity-0 group-hover:opacity-100 transition-opacity"><button onClick={(e) => { e.stopPropagation(); editPageName(page.id); }} className="hover:text-blue-600"><Edit2 size={12} /></button><button onClick={(e) => { e.stopPropagation(); deletePage(page.id); }} className="hover:text-red-600"><X size={12} /></button></div>)}
               </div>
