@@ -327,8 +327,7 @@ const TreeNode = ({
   nodeIndex = [],
   onSelectJumpTarget,
   onJumpToNode,
-  activePageId,
-  forceContentOpen = false
+  activePageId
 }) => {
   const [showLinkPicker, setShowLinkPicker] = useState(false);
   const pickerWrapperRef = useRef(null);
@@ -362,7 +361,7 @@ const TreeNode = ({
     (node.notes || '').toLowerCase().includes(lowerTerm)
   );
   const jumpPaddingStyle = hasJumpTarget ? { paddingRight: '4rem', paddingBottom: `${16 + jumpTargets.length * 28}px` } : {};
-  const isContentOpen = forceContentOpen || node.isContentOpen !== false;
+  const isContentOpen = node.isContentOpen !== false;
 
   useEffect(() => {
     if (!showLinkPicker) return;
@@ -558,7 +557,6 @@ const TreeNode = ({
           onSelectJumpTarget={onSelectJumpTarget}
           onJumpToNode={onJumpToNode}
           activePageId={activePageId}
-          forceContentOpen={node.isOpen}
         />
       ))}</div>}
     </div>
