@@ -36,6 +36,15 @@ const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 // --- Helper Functions ---
 const generateId = () => `node-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 const generateShareId = () => Math.random().toString(36).substr(2, 6).toUpperCase();
+const JUMP_TARGET_DELIMITER = '::';
+const normalizeJumpTargetId = (value, fallbackPageId) => {
+  if (!value) return { pageId: fallbackPageId, nodeId: '', key: '' };
+  if (value.includes(JUMP_TARGET_DELIMITER)) {
+    const [pageId, nodeId] = value.split(JUMP_TARGET_DELIMITER);
+    return { pageId, nodeId, key: `${pageId}${JUMP_TARGET_DELIMITER}${nodeId}` };
+  }
+  return { pageId: fallbackPageId, nodeId: value, key: `${fallbackPageId}${JUMP_TARGET_DELIMITER}${value}` };
+};
 const LOCAL_SAVE_KEY = 'sop_studio_local_draft';
 const SEARCH_PANEL_WIDTH = 320;
 
@@ -317,7 +326,8 @@ const TreeNode = ({
   rootId,
   nodeIndex = [],
   onSelectJumpTarget,
-  onJumpToNode
+  onJumpToNode,
+  activePageId
 }) => {
   const [showLinkPicker, setShowLinkPicker] = useState(false);
   const pickerWrapperRef = useRef(null);
@@ -330,11 +340,15 @@ const TreeNode = ({
     : node.jumpTargetId
       ? [node.jumpTargetId]
       : [];
-  const jumpTargets = jumpTargetIds
-    .map(id => nodeIndex.find(item => item.id === id))
+  const jumpTargetKeys = jumpTargetIds
+    .map(id => normalizeJumpTargetId(id, activePageId).key)
+    .filter(Boolean);
+  const jumpTargets = jumpTargetKeys
+    .map(key => nodeIndex.find(item => item.key === key))
     .filter(Boolean);
   const hasJumpTarget = jumpTargets.length > 0;
-  const selectableTargets = nodeIndex.filter(item => item.id !== node.id);
+  const selfKey = normalizeJumpTargetId(node.id, activePageId).key;
+  const selectableTargets = nodeIndex.filter(item => item.key !== selfKey);
   const canMoveUp = isEditable && parentId && siblingIndex > 0;
   const canMoveDown = isEditable && parentId && siblingIndex < siblingCount - 1;
   const canLevelUp = isEditable && parentId && parentId !== rootId;
@@ -441,7 +455,7 @@ const TreeNode = ({
                                {jumpTargets.map(target => (
                                  <div key={target.id} className="flex items-center gap-1 rounded-md bg-indigo-50 px-2 py-1 text-[11px] text-indigo-800">
                                    <button
-                                     onClick={(e) => { e.stopPropagation(); onSelectJumpTarget?.(node.id, target.id, 'removeOne'); }}
+                                     onClick={(e) => { e.stopPropagation(); onSelectJumpTarget?.(node.id, target.key, 'removeOne'); }}
                                      className="text-indigo-500 hover:text-indigo-700"
                                      title="取消指向"
                                    >
@@ -455,11 +469,11 @@ const TreeNode = ({
                            <div className="max-h-64 overflow-y-auto p-2 space-y-1">
                              {selectableTargets.length === 0 && <div className="text-xs text-slate-400 px-2 py-1">目前沒有其他區塊</div>}
                              {selectableTargets.map(opt => {
-                               const isPicked = jumpTargetIds.includes(opt.id);
+                               const isPicked = jumpTargetKeys.includes(opt.key);
                                return (
                                  <button
-                                   key={opt.id}
-                                   onClick={(e) => { e.stopPropagation(); onSelectJumpTarget?.(node.id, opt.id, 'toggle'); }}
+                                   key={opt.key}
+                                   onClick={(e) => { e.stopPropagation(); onSelectJumpTarget?.(node.id, opt.key, 'toggle'); }}
                                    className={`w-full text-left p-2 rounded-md border ${isPicked ? 'bg-indigo-50 border-indigo-200' : 'border-transparent hover:bg-slate-100 hover:border-blue-200'}`}
                                  >
                                    <div className="flex items-center justify-between gap-2">
@@ -510,11 +524,11 @@ const TreeNode = ({
             <div className="absolute bottom-3 right-3 flex flex-col items-end gap-2">
               {jumpTargets.map(target => (
                 <button
-                  key={target.id}
-                  onClick={(e) => { e.stopPropagation(); onJumpToNode?.(target.id); }}
+                  key={target.key}
+                  onClick={(e) => { e.stopPropagation(); onJumpToNode?.(target.key); }}
                   className="inline-flex items-center gap-1 text-xs text-blue-700 bg-blue-50 border border-blue-100 px-2 py-1 rounded-full shadow-sm hover:bg-blue-100"
                 >
-                  <ExternalLink size={12} /> 跳轉至 {target.title}
+                  <ExternalLink size={12} /> 跳轉至 {target.pageId && target.pageId !== activePageId ? `${target.pageName} / ${target.title}` : target.title}
                 </button>
               ))}
             </div>
@@ -541,6 +555,7 @@ const TreeNode = ({
           nodeIndex={nodeIndex}
           onSelectJumpTarget={onSelectJumpTarget}
           onJumpToNode={onJumpToNode}
+          activePageId={activePageId}
         />
       ))}</div>}
     </div>
@@ -665,26 +680,40 @@ export default function App() {
         || (node.description || '').toLowerCase().includes(lower)
         || (node.notes || '').toLowerCase().includes(lower);
       if (match) {
-        results.push({ id: node.id, title: node.title || '未命名', path: fullPath.join(' / ') });
+        results.push({
+          id: node.id,
+          key: `${activePageId}${JUMP_TARGET_DELIMITER}${node.id}`,
+          title: node.title || '未命名',
+          path: fullPath.join(' / ')
+        });
       }
       (node.children || []).forEach(child => walk(child, fullPath));
     };
     walk(activeTreeData, []);
     setSearchResults(results);
-  }, [searchTerm, activeTreeData]);
+  }, [searchTerm, activeTreeData, activePageId]);
 
   useEffect(() => {
-    if (!activeTreeData) return;
+    if (!pages.length) return;
     const list = [];
-    const walk = (node, path = []) => {
+    const walk = (node, page, path = []) => {
       const title = node.title || '未命名';
       const currentPath = [...path, title];
-      list.push({ id: node.id, title, path: currentPath.join(' / ') });
-      (node.children || []).forEach(child => walk(child, currentPath));
+      list.push({
+        key: `${page.id}${JUMP_TARGET_DELIMITER}${node.id}`,
+        id: node.id,
+        pageId: page.id,
+        pageName: page.name,
+        title,
+        path: `${page.name} / ${currentPath.join(' / ')}`
+      });
+      (node.children || []).forEach(child => walk(child, page, currentPath));
     };
-    walk(activeTreeData, []);
+    pages.forEach(page => {
+      if (page.root) walk(page.root, page, []);
+    });
     setNodeIndex(list);
-  }, [activeTreeData, pages]);
+  }, [pages]);
 
   // --- Logic ---
   const findNode = (node, id) => {
@@ -912,17 +941,26 @@ export default function App() {
     handleToggleNode(nodeId);
   };
 
-  const handleJumpToNode = (nodeId) => {
-    const res = openPathToNode(activeTreeData, nodeId);
-    if (res.found) {
-      updatePagesWithNewTree(res.node);
-      setSelectedId(nodeId);
-      setTimeout(() => document.getElementById(`node-${nodeId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 80);
-    }
+  const handleJumpToNode = (targetKey) => {
+    const { pageId, nodeId } = normalizeJumpTargetId(targetKey, activePageId);
+    const targetPage = pages.find(page => page.id === pageId);
+    if (!targetPage) return;
+    const res = openPathToNode(targetPage.root, nodeId);
+    if (!res.found) return;
+    const updatedPages = pages.map(page => (
+      page.id === pageId ? { ...page, root: res.node } : page
+    ));
+    setPages(updatedPages);
+    setActivePageId(pageId);
+    setSelectedId(nodeId);
+    setTimeout(() => document.getElementById(`node-${nodeId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 120);
   };
 
   const handleSelectJumpTarget = (nodeId, targetId, action = 'toggle') => {
-    if (targetId === nodeId) { setStatusMsg('無法指向自己'); return; }
+    if (normalizeJumpTargetId(targetId, activePageId).key === normalizeJumpTargetId(nodeId, activePageId).key) {
+      setStatusMsg('無法指向自己');
+      return;
+    }
     const node = findNode(activeTreeData, nodeId);
     if (!node) return;
     const existing = Array.isArray(node.jumpTargetIds)
@@ -930,15 +968,16 @@ export default function App() {
       : node.jumpTargetId
         ? [node.jumpTargetId]
         : [];
-    let next = existing;
+    const existingKeys = existing.map(id => normalizeJumpTargetId(id, activePageId).key).filter(Boolean);
+    let next = existingKeys;
     if (action === 'clearAll' || targetId === null) {
       next = [];
     } else if (action === 'removeOne') {
-      next = existing.filter(id => id !== targetId);
+      next = existingKeys.filter(id => id !== targetId);
     } else {
-      next = existing.includes(targetId)
-        ? existing.filter(id => id !== targetId)
-        : [...existing, targetId];
+      next = existingKeys.includes(targetId)
+        ? existingKeys.filter(id => id !== targetId)
+        : [...existingKeys, targetId];
     }
     handleUpdateNode(nodeId, { ...node, jumpTargetIds: next, jumpTargetId: undefined });
     setStatusMsg(next.length ? '已更新跳轉區塊' : '已清除跳轉');
@@ -1062,8 +1101,8 @@ export default function App() {
               <div className="space-y-2">
                 {searchResults.map(item => (
                   <button
-                    key={item.id}
-                    onClick={() => handleJumpToNode(item.id)}
+                    key={item.key}
+                    onClick={() => handleJumpToNode(item.key)}
                     className="w-full text-left p-2 rounded-lg border border-slate-200 hover:border-blue-300 hover:bg-blue-50"
                   >
                     <div className="text-sm font-semibold text-slate-800 truncate">{item.title}</div>
@@ -1093,6 +1132,7 @@ export default function App() {
                   nodeIndex={nodeIndex}
                   onSelectJumpTarget={handleSelectJumpTarget}
                   onJumpToNode={handleJumpToNode}
+                  activePageId={activePageId}
                 />
               )}
               <div className="pl-12 relative mt-4 opacity-50"><div className="absolute top-0 left-[-24px] h-8 w-px bg-slate-300 transform -translate-x-1/2" /><div className="ml-4 p-3 border-2 border-dashed border-slate-300 rounded-lg text-slate-400 text-xs text-center">END OF FLOW</div></div>
