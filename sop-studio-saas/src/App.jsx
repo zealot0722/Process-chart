@@ -743,7 +743,21 @@ export default function App() {
     setPages(newPages);
   };
   const handleUpdateNode = (id, newData) => updatePagesWithNewTree(updateNodeRec(activeTreeData, id, newData));
-  const handleToggleNode = (id) => { const node = findNode(activeTreeData, id); if(node) handleUpdateNode(id, { ...node, isOpen: !node.isOpen }); };
+  const collapseDescendants = (node) => ({
+    ...node,
+    isOpen: false,
+    isContentOpen: false,
+    children: (node.children || []).map(child => collapseDescendants(child))
+  });
+  const handleToggleNode = (id) => {
+    const node = findNode(activeTreeData, id);
+    if (!node) return;
+    if (node.isOpen) {
+      handleUpdateNode(id, collapseDescendants(node));
+    } else {
+      handleUpdateNode(id, { ...node, isOpen: true });
+    }
+  };
   const deleteNodeRec = (node, targetId) => {
     if (node.id === targetId) return null;
     if (!node.children) return node;
@@ -938,13 +952,6 @@ export default function App() {
     });
     return { found, node: { ...node, isOpen: found || node.isOpen, children } };
   };
-
-  const collapseDescendants = (node) => ({
-    ...node,
-    isOpen: false,
-    isContentOpen: false,
-    children: (node.children || []).map(child => collapseDescendants(child))
-  });
 
   const handleCardClick = (nodeId) => {
     setSelectedId(nodeId);
