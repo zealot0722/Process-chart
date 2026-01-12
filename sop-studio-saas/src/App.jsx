@@ -939,12 +939,23 @@ export default function App() {
     return { found, node: { ...node, isOpen: found || node.isOpen, children } };
   };
 
+  const collapseDescendants = (node) => ({
+    ...node,
+    isOpen: false,
+    isContentOpen: false,
+    children: (node.children || []).map(child => collapseDescendants(child))
+  });
+
   const handleCardClick = (nodeId) => {
     setSelectedId(nodeId);
     const node = findNode(activeTreeData, nodeId);
     if (!node) return;
     const nextContentOpen = node.isContentOpen === false;
-    handleUpdateNode(nodeId, { ...node, isContentOpen: nextContentOpen });
+    if (nextContentOpen) {
+      handleUpdateNode(nodeId, { ...node, isContentOpen: true });
+    } else {
+      handleUpdateNode(nodeId, collapseDescendants(node));
+    }
   };
 
   const handleJumpToNode = (targetKey) => {
