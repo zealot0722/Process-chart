@@ -318,13 +318,16 @@ const CopyNodeModal = ({
   onToggleNode,
   onCopyToPage,
   onCreatePageWithCopy,
-  sourceNodeId
+  sourceNodeIds,
+  copyDestination,
+  onSelectDestination
 }) => {
   if (!isOpen) return null;
 
-  const renderNodeTree = (node, depth = 0) => {
+  const renderNodeTree = (node, depth = 0, pageId) => {
     const hasChildren = (node.children || []).length > 0;
     const isExpanded = copyExpandedNodes.has(node.id);
+    const isSelected = copyDestination?.pageId === pageId && copyDestination?.nodeId === node.id;
     return (
       <div key={node.id} className="space-y-1">
         <div className="flex items-center gap-2 text-sm text-slate-600" style={{ paddingLeft: `${depth * 12}px` }}>
@@ -339,11 +342,16 @@ const CopyNodeModal = ({
           ) : (
             <span className="w-3" />
           )}
-          <span className="truncate">{node.title || '未命名'}</span>
+          <button
+            onClick={() => onSelectDestination({ pageId, nodeId: node.id })}
+            className={`truncate text-left ${isSelected ? 'text-blue-700 font-semibold' : ''}`}
+          >
+            {node.title || '未命名'}
+          </button>
         </div>
         {hasChildren && isExpanded && (
           <div className="space-y-1">
-            {node.children.map(child => renderNodeTree(child, depth + 1))}
+            {node.children.map(child => renderNodeTree(child, depth + 1, pageId))}
           </div>
         )}
       </div>
@@ -362,10 +370,11 @@ const CopyNodeModal = ({
           </button>
         </div>
         <div className="p-4 space-y-4">
-          <div className="text-xs text-slate-400">選擇要複製到的頁面（僅顯示最上層頁面）</div>
+          <div className="text-xs text-slate-400">選擇要複製到的頁面與目標區塊</div>
           <div className="space-y-2 max-h-64 overflow-y-auto">
             {pages.map(page => {
               const isExpanded = copyExpandedPages.has(page.id);
+              const isDestPage = copyDestination?.pageId === page.id;
               return (
                 <div key={page.id} className="border border-slate-200 rounded-lg">
                   <div className="flex items-center justify-between px-3 py-2 bg-slate-50">
@@ -377,7 +386,7 @@ const CopyNodeModal = ({
                       {page.name}
                     </button>
                     <button
-                      onClick={() => onCopyToPage(sourceNodeId, page.id)}
+                      onClick={() => onCopyToPage(sourceNodeIds, page.id, isDestPage ? copyDestination.nodeId : null)}
                       className="text-xs text-blue-600 hover:text-blue-700"
                     >
                       複製到此頁
@@ -385,7 +394,7 @@ const CopyNodeModal = ({
                   </div>
                   {isExpanded && page.root && (
                     <div className="px-3 py-2 space-y-1">
-                      {renderNodeTree(page.root)}
+                      {renderNodeTree(page.root, 0, page.id)}
                     </div>
                   )}
                 </div>
@@ -393,7 +402,7 @@ const CopyNodeModal = ({
             })}
           </div>
           <button
-            onClick={() => onCreatePageWithCopy(sourceNodeId)}
+            onClick={() => onCreatePageWithCopy(sourceNodeIds)}
             className="w-full border border-dashed border-blue-300 text-blue-600 hover:text-blue-700 hover:border-blue-400 rounded-lg py-2 text-sm flex items-center justify-center gap-2"
           >
             <Plus size={14} /> 新增頁面並複製
@@ -407,7 +416,7 @@ const CopyNodeModal = ({
 // --- Component: Tree Node ---
 const TreeNode = ({
   node,
-  selectedId,
+  selectedIds,
   onSelect,
   onToggle,
   onAction,
@@ -429,7 +438,7 @@ const TreeNode = ({
 }) => {
   const [showLinkPicker, setShowLinkPicker] = useState(false);
   const pickerWrapperRef = useRef(null);
-  const isSelected = selectedId === node.id;
+  const isSelected = selectedIds.includes(node.id);
   const nodeStyle = { bgColor: 'bg-white', borderColor: 'border-slate-200', fontFamily: 'font-sans', titleSize: 'text-lg', contentSize: 'text-base', ...node.style };
   const images = node.images || [];
   const links = node.links || [];
@@ -487,7 +496,7 @@ const TreeNode = ({
           id={`node-${node.id}`}
           onClick={(e) => {
             e.stopPropagation();
-            onCardClick(node.id);
+            onCardClick(node.id, e);
           }}
           style={jumpPaddingStyle}
           className={`relative rounded-xl border p-4 transition-all duration-200 cursor-pointer ${nodeStyle.bgColor} ${nodeStyle.fontFamily} ${isSelected ? 'ring-2 ring-blue-500 ring-offset-2 shadow-lg scale-[1.01]' : 'shadow-sm hover:shadow-md hover:border-blue-300'} ${nodeStyle.borderColor.includes('border-l-4') ? nodeStyle.borderColor : `border-l-4 ${nodeStyle.borderColor}`} ${hasMatch ? 'border-dashed border-amber-400 shadow-[0_0_0_3px_rgba(251,191,36,0.25)]' : ''}`}>
@@ -652,7 +661,7 @@ const TreeNode = ({
         <TreeNode
           key={child.id}
           node={child}
-          selectedId={selectedId}
+          selectedIds={selectedIds}
           onSelect={onSelect}
           onToggle={onToggle}
           onAction={onAction}
@@ -681,6 +690,7 @@ export default function App() {
   const [pages, setPages] = useState(initialPages);
   const [activePageId, setActivePageId] = useState(initialPages[0].id);
   const [selectedId, setSelectedId] = useState(null);
+  const [selectedIds, setSelectedIds] = useState([]);
   const [isEditable, setIsEditable] = useState(false);
   const [user, setUser] = useState(null);
   const [cloudId, setCloudId] = useState('');
@@ -695,7 +705,8 @@ export default function App() {
   const [showSearchPanel, setShowSearchPanel] = useState(true);
   const [toastMessage, setToastMessage] = useState('');
   const [nodeIndex, setNodeIndex] = useState([]);
-  const [copyModalNodeId, setCopyModalNodeId] = useState(null);
+  const [copyModalNodeIds, setCopyModalNodeIds] = useState([]);
+  const [copyDestination, setCopyDestination] = useState(null);
   const [copyExpandedPages, setCopyExpandedPages] = useState(new Set());
   const [copyExpandedNodes, setCopyExpandedNodes] = useState(new Set());
   const fileInputRef = useRef(null);
@@ -726,13 +737,15 @@ export default function App() {
   };
 
   const openCopyModal = (nodeId) => {
-    setCopyModalNodeId(nodeId);
+    const nextIds = selectedIds.includes(nodeId) ? selectedIds : [nodeId];
+    setCopyModalNodeIds(nextIds);
+    setCopyDestination(null);
     setCopyExpandedPages(new Set());
     setCopyExpandedNodes(new Set());
   };
 
   const closeCopyModal = () => {
-    setCopyModalNodeId(null);
+    setCopyModalNodeIds([]);
   };
 
   const activePageIndex = pages.findIndex(p => p.id === activePageId);
@@ -905,6 +918,9 @@ export default function App() {
       handleUpdateNode(id, { ...node, isOpen: true });
     }
   };
+  const getActionSelection = (fallbackId) => (
+    selectedIds.includes(fallbackId) ? selectedIds : [fallbackId]
+  );
   const deleteNodeRec = (node, targetId) => {
     if (node.id === targetId) return null;
     if (!node.children) return node;
@@ -978,41 +994,55 @@ export default function App() {
     return node;
   };
   const moveNodeWithinLevel = (nodeId, direction) => {
-    const parent = findParent(activeTreeData, nodeId);
-    if (!parent || !parent.children) return;
-    const siblings = parent.children;
-    const idx = siblings.findIndex(c => c.id === nodeId);
-    const neighbor = direction === 'up' ? siblings[idx - 1] : siblings[idx + 1];
-    if (!neighbor) return;
-    const updated = reorderSiblings(activeTreeData, parent.id, nodeId, neighbor.id, direction === 'up' ? 'before' : 'after');
-    updatePagesWithNewTree(updated);
+    const selection = getActionSelection(nodeId);
+    let updatedTree = activeTreeData;
+    const ordered = direction === 'down' ? [...selection].reverse() : selection;
+    ordered.forEach(id => {
+      const parent = findParent(updatedTree, id);
+      if (!parent || !parent.children) return;
+      const siblings = parent.children;
+      const idx = siblings.findIndex(c => c.id === id);
+      const neighbor = direction === 'up' ? siblings[idx - 1] : siblings[idx + 1];
+      if (!neighbor) return;
+      updatedTree = reorderSiblings(updatedTree, parent.id, id, neighbor.id, direction === 'up' ? 'before' : 'after');
+    });
+    updatePagesWithNewTree(updatedTree);
     setSelectedId(nodeId);
     setStatusMsg('已調整順序');
   };
 
   const levelUpNode = (nodeId) => {
-    const parent = findParent(activeTreeData, nodeId);
-    if (!parent || parent.id === activeTreeData.id) { setStatusMsg('已在最上層'); return; }
-    const grand = findParent(activeTreeData, parent.id);
-    if (!grand) return;
-    const { removed, tree } = removeNodeFromTree(activeTreeData, nodeId);
-    if (!removed || !tree) return;
-    const updated = insertAsSibling(tree, parent.id, removed, 'after');
-    updatePagesWithNewTree(updated);
+    const selection = getActionSelection(nodeId);
+    let updatedTree = activeTreeData;
+    selection.forEach(id => {
+      const parent = findParent(updatedTree, id);
+      if (!parent || parent.id === updatedTree.id) { setStatusMsg('已在最上層'); return; }
+      const grand = findParent(updatedTree, parent.id);
+      if (!grand) return;
+      const { removed, tree } = removeNodeFromTree(updatedTree, id);
+      if (!removed || !tree) return;
+      updatedTree = insertAsSibling(tree, parent.id, removed, 'after');
+    });
+    updatePagesWithNewTree(updatedTree);
     setSelectedId(nodeId);
     setStatusMsg('已提升層級');
   };
 
   const levelDownNode = (nodeId) => {
-    const parent = findParent(activeTreeData, nodeId);
-    if (!parent || !parent.children) { setStatusMsg('無法降低層級'); return; }
-    const idx = parent.children.findIndex(c => c.id === nodeId);
-    if (idx <= 0) { setStatusMsg('需要有上一個同層區塊才能降低'); return; }
-    const newParent = parent.children[idx - 1];
-    const { removed, tree } = removeNodeFromTree(activeTreeData, nodeId);
-    if (!removed || !tree) return;
-    const updated = insertAsChild(tree, newParent.id, removed);
-    updatePagesWithNewTree(updated);
+    const selection = getActionSelection(nodeId);
+    let updatedTree = activeTreeData;
+    const ordered = [...selection].reverse();
+    ordered.forEach(id => {
+      const parent = findParent(updatedTree, id);
+      if (!parent || !parent.children) { setStatusMsg('無法降低層級'); return; }
+      const idx = parent.children.findIndex(c => c.id === id);
+      if (idx <= 0) { setStatusMsg('需要有上一個同層區塊才能降低'); return; }
+      const newParent = parent.children[idx - 1];
+      const { removed, tree } = removeNodeFromTree(updatedTree, id);
+      if (!removed || !tree) return;
+      updatedTree = insertAsChild(tree, newParent.id, removed);
+    });
+    updatePagesWithNewTree(updatedTree);
     setSelectedId(nodeId);
     setStatusMsg('已降低層級');
   };
@@ -1046,28 +1076,40 @@ export default function App() {
       ? cloneNodeWithNewIds(sourcePage.root)
       : { id: generateId(), title: `${name} 總覽`, description: "開始...", notes: "", type: "role", isOpen: true, images: [], links: [], style: { bgColor: "bg-white", borderColor: "border-blue-500", fontFamily: "font-sans", titleSize: "text-2xl", contentSize: "text-base" }, children: [] };
     const newPage = { id: generateId(), name, root: rootNode };
-    if (options.sourceNodeId) {
-      const sourceNode = findNode(activeTreeData, options.sourceNodeId);
-      if (sourceNode) {
-        const copied = cloneNodeWithNewIds(sourceNode);
-        newPage.root = { ...newPage.root, isOpen: true, children: [...(newPage.root.children || []), copied] };
+    if (options.sourceNodeIds?.length) {
+      const copiedNodes = options.sourceNodeIds
+        .map(id => findNode(activeTreeData, id))
+        .filter(Boolean)
+        .map(node => cloneNodeWithNewIds(node));
+      if (copiedNodes.length) {
+        newPage.root = { ...newPage.root, isOpen: true, children: [...(newPage.root.children || []), ...copiedNodes] };
       }
     }
     setPages([...pages, newPage]);
     setActivePageId(newPage.id);
   };
 
-  const createPageAndCopyNode = (nodeId) => {
-    duplicatePage(null, { createOnly: true, sourceNodeId: nodeId });
+  const createPageAndCopyNode = (nodeIds) => {
+    const ids = Array.isArray(nodeIds) ? nodeIds : [nodeIds];
+    duplicatePage(null, { createOnly: true, sourceNodeIds: ids });
     closeCopyModal();
   };
 
-  const copyNodeToPage = (nodeId, pageId) => {
-    const sourceNode = findNode(activeTreeData, nodeId);
+  const copyNodeToPage = (nodeIds, pageId, destinationId = null) => {
+    const ids = Array.isArray(nodeIds) ? nodeIds : [nodeIds];
     const targetPage = pages.find(page => page.id === pageId);
-    if (!sourceNode || !targetPage) return;
-    const clonedNode = cloneNodeWithNewIds(sourceNode);
-    const updatedRoot = { ...targetPage.root, isOpen: true, children: [...(targetPage.root.children || []), clonedNode] };
+    if (!targetPage) return;
+    const destNode = destinationId ? findNode(targetPage.root, destinationId) : targetPage.root;
+    if (!destNode) return;
+    const clonedNodes = ids
+      .map(id => findNode(activeTreeData, id))
+      .filter(Boolean)
+      .map(node => cloneNodeWithNewIds(node));
+    const updatedRoot = updateNodeRec(targetPage.root, destNode.id, {
+      ...destNode,
+      isOpen: true,
+      children: [...(destNode.children || []), ...clonedNodes]
+    });
     const updatedPages = pages.map(page => (
       page.id === pageId ? { ...page, root: updatedRoot } : page
     ));
@@ -1138,8 +1180,15 @@ export default function App() {
     return { found, node: { ...node, isOpen: found || node.isOpen, children } };
   };
 
-  const handleCardClick = (nodeId) => {
+  const handleCardClick = (nodeId, event) => {
+    const isMulti = event?.ctrlKey || event?.metaKey;
     setSelectedId(nodeId);
+    setSelectedIds(prev => {
+      if (!isMulti) return [nodeId];
+      return prev.includes(nodeId)
+        ? prev.filter(id => id !== nodeId)
+        : [...prev, nodeId];
+    });
     const node = findNode(activeTreeData, nodeId);
     if (!node) return;
     const nextContentOpen = node.isContentOpen === false;
@@ -1219,6 +1268,7 @@ export default function App() {
     if (tabDragState.current.moved) return;
     setActivePageId(pageId);
     setSelectedId(null);
+    setSelectedIds([]);
   };
 
   const scrollTabs = (direction) => {
@@ -1330,12 +1380,12 @@ export default function App() {
             </div>
           )}
         </aside>
-        <div className="flex-1 overflow-auto bg-slate-50/50 p-8 md:p-12" onClick={() => { setSelectedId(null); }}>
+        <div className="flex-1 overflow-auto bg-slate-50/50 p-8 md:p-12" onClick={() => { setSelectedId(null); setSelectedIds([]); }}>
            <div className="max-w-4xl mx-auto pb-32">
               {activeTreeData && (
                 <TreeNode
                   node={activeTreeData}
-                  selectedId={selectedId}
+          selectedIds={selectedIds}
                   onSelect={setSelectedId}
                   onToggle={handleToggleNode}
                   onAction={handleNodeAction}
@@ -1358,7 +1408,7 @@ export default function App() {
     </main>
       <ShareModal isOpen={showShareModal} onClose={() => setShowShareModal(false)} cloudId={cloudId} onGenerateLink={handleCloudSave} />
       <CopyNodeModal
-        isOpen={copyModalNodeId !== null}
+        isOpen={copyModalNodeIds.length > 0}
         onClose={closeCopyModal}
         pages={pages}
         copyExpandedPages={copyExpandedPages}
@@ -1367,7 +1417,9 @@ export default function App() {
         onToggleNode={toggleCopyNode}
         onCopyToPage={copyNodeToPage}
         onCreatePageWithCopy={createPageAndCopyNode}
-        sourceNodeId={copyModalNodeId}
+        sourceNodeIds={copyModalNodeIds}
+        copyDestination={copyDestination}
+        onSelectDestination={setCopyDestination}
       />
       {toastMessage && (
       <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white text-sm px-4 py-2 rounded-lg shadow-lg animate-fadeIn">
