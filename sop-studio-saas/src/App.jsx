@@ -327,7 +327,8 @@ const TreeNode = ({
   nodeIndex = [],
   onSelectJumpTarget,
   onJumpToNode,
-  activePageId
+  activePageId,
+  numberPath = []
 }) => {
   const [showLinkPicker, setShowLinkPicker] = useState(false);
   const pickerWrapperRef = useRef(null);
@@ -416,7 +417,14 @@ const TreeNode = ({
                   </div>
                 )}
                 <div className={`p-2 rounded-lg shrink-0 ${isSelected ? 'bg-blue-50' : 'bg-white/80 border border-slate-100'}`}>{getIcon()}</div>
-                <div className="flex-1"><h3 className={`font-bold text-slate-800 leading-tight ${nodeStyle.titleSize}`}>{node.title}</h3></div>
+                <div className="flex-1">
+                  <h3 className={`font-bold text-slate-800 leading-tight ${nodeStyle.titleSize}`}>
+                    {depth > 0 && (
+                      <span className="mr-2 text-slate-400 font-semibold">{numberPath.join('.')}.</span>
+                    )}
+                    {node.title}
+                  </h3>
+                </div>
              </div>
              <div className={`flex items-center gap-1 transition-opacity duration-200 ${isSelected || 'group-hover:opacity-100 opacity-0'}`}>
                 {isEditable && (
@@ -557,6 +565,7 @@ const TreeNode = ({
           onSelectJumpTarget={onSelectJumpTarget}
           onJumpToNode={onJumpToNode}
           activePageId={activePageId}
+          numberPath={[...numberPath, idx + 1]}
         />
       ))}</div>}
     </div>
