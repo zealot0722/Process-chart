@@ -308,6 +308,102 @@ const InspectorPanel = ({ selectedNode, onUpdate, onClose, isEditable }) => {
   );
 };
 
+const CopyNodeModal = ({
+  isOpen,
+  onClose,
+  pages,
+  copyExpandedPages,
+  copyExpandedNodes,
+  onTogglePage,
+  onToggleNode,
+  onCopyToPage,
+  onCreatePageWithCopy,
+  sourceNodeId
+}) => {
+  if (!isOpen) return null;
+
+  const renderNodeTree = (node, depth = 0) => {
+    const hasChildren = (node.children || []).length > 0;
+    const isExpanded = copyExpandedNodes.has(node.id);
+    return (
+      <div key={node.id} className="space-y-1">
+        <div className="flex items-center gap-2 text-sm text-slate-600" style={{ paddingLeft: `${depth * 12}px` }}>
+          {hasChildren ? (
+            <button
+              onClick={() => onToggleNode(node.id)}
+              className="text-slate-400 hover:text-slate-600"
+              aria-label="展開子層"
+            >
+              {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+            </button>
+          ) : (
+            <span className="w-3" />
+          )}
+          <span className="truncate">{node.title || '未命名'}</span>
+        </div>
+        {hasChildren && isExpanded && (
+          <div className="space-y-1">
+            {node.children.map(child => renderNodeTree(child, depth + 1))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden">
+        <div className="p-4 border-b border-gray-100 flex justify-between items-center">
+          <h3 className="font-bold text-gray-800 flex items-center gap-2">
+            <Copy size={16} className="text-blue-500" /> 複製區塊
+          </h3>
+          <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-full text-gray-500">
+            <X size={18} />
+          </button>
+        </div>
+        <div className="p-4 space-y-4">
+          <div className="text-xs text-slate-400">選擇要複製到的頁面（僅顯示最上層頁面）</div>
+          <div className="space-y-2 max-h-64 overflow-y-auto">
+            {pages.map(page => {
+              const isExpanded = copyExpandedPages.has(page.id);
+              return (
+                <div key={page.id} className="border border-slate-200 rounded-lg">
+                  <div className="flex items-center justify-between px-3 py-2 bg-slate-50">
+                    <button
+                      onClick={() => onTogglePage(page.id)}
+                      className="flex items-center gap-2 text-sm font-semibold text-slate-700"
+                    >
+                      {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                      {page.name}
+                    </button>
+                    <button
+                      onClick={() => onCopyToPage(sourceNodeId, page.id)}
+                      className="text-xs text-blue-600 hover:text-blue-700"
+                    >
+                      複製到此頁
+                    </button>
+                  </div>
+                  {isExpanded && page.root && (
+                    <div className="px-3 py-2 space-y-1">
+                      {renderNodeTree(page.root)}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          <button
+            onClick={() => onCreatePageWithCopy(sourceNodeId)}
+            className="w-full border border-dashed border-blue-300 text-blue-600 hover:text-blue-700 hover:border-blue-400 rounded-lg py-2 text-sm flex items-center justify-center gap-2"
+          >
+            <Plus size={14} /> 新增頁面並複製
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // --- Component: Tree Node ---
 const TreeNode = ({
   node,
@@ -329,14 +425,10 @@ const TreeNode = ({
   onJumpToNode,
   activePageId,
   numberPath = [],
-  pages = [],
-  onCopyNode,
-  onDuplicatePage
+  onOpenCopyModal
 }) => {
   const [showLinkPicker, setShowLinkPicker] = useState(false);
-  const [showCopyPicker, setShowCopyPicker] = useState(false);
   const pickerWrapperRef = useRef(null);
-  const copyWrapperRef = useRef(null);
   const isSelected = selectedId === node.id;
   const nodeStyle = { bgColor: 'bg-white', borderColor: 'border-slate-200', fontFamily: 'font-sans', titleSize: 'text-lg', contentSize: 'text-base', ...node.style };
   const images = node.images || [];
@@ -379,17 +471,6 @@ const TreeNode = ({
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showLinkPicker]);
-
-  useEffect(() => {
-    if (!showCopyPicker) return;
-    const handleClickOutside = (e) => {
-      if (copyWrapperRef.current && !copyWrapperRef.current.contains(e.target)) {
-        setShowCopyPicker(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [showCopyPicker]);
 
   const getIcon = () => {
     if (node.type === 'role') return <Box className="w-5 h-5 text-blue-600" />;
@@ -515,44 +596,13 @@ const TreeNode = ({
                          </div>
                        )}
                      </div>
-                     <div className="relative" ref={copyWrapperRef}>
-                       <button
-                         onClick={(e) => { e.stopPropagation(); setShowCopyPicker(true); }}
-                         className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded"
-                         title="複製區塊"
-                       >
-                         <Copy size={16} />
-                       </button>
-                       {showCopyPicker && (
-                         <div className="absolute right-0 mt-2 w-64 bg-white border border-slate-200 rounded-lg shadow-xl z-50">
-                           <div className="flex items-center justify-between px-3 py-2 border-b border-slate-100 text-xs text-slate-500">
-                             <span>複製到頁面</span>
-                             <button onClick={(e) => { e.stopPropagation(); setShowCopyPicker(false); }} className="text-slate-400 hover:text-slate-600">
-                               <X size={12} />
-                             </button>
-                           </div>
-                           <div className="max-h-64 overflow-y-auto p-2 space-y-1">
-                             {pages.map(page => (
-                               <button
-                                 key={page.id}
-                                 onClick={(e) => { e.stopPropagation(); onCopyNode?.(node.id, page.id); setShowCopyPicker(false); }}
-                                 className="w-full text-left p-2 rounded-md border border-transparent hover:bg-slate-100 hover:border-blue-200"
-                               >
-                                 <div className="text-sm font-semibold text-slate-800 truncate">{page.name}</div>
-                               </button>
-                             ))}
-                           </div>
-                           <div className="border-t border-slate-100 px-2 py-2">
-                             <button
-                               onClick={(e) => { e.stopPropagation(); onDuplicatePage?.(null, { createOnly: true, sourceNodeId: node.id }); setShowCopyPicker(false); }}
-                               className="w-full text-xs text-blue-600 hover:text-blue-700 flex items-center justify-center gap-1"
-                             >
-                               <Plus size={12} /> 新增頁面並複製
-                             </button>
-                           </div>
-                         </div>
-                       )}
-                     </div>
+                     <button
+                       onClick={(e) => { e.stopPropagation(); onOpenCopyModal?.(node.id); }}
+                       className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded"
+                       title="複製區塊"
+                     >
+                       <Copy size={16} />
+                     </button>
                      {depth > 0 && <button onClick={(e) => { e.stopPropagation(); onAction('delete', node.id); }} className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded" title="刪除"><Trash2 size={16} /></button>}
                   </>
                 )}
@@ -645,6 +695,9 @@ export default function App() {
   const [showSearchPanel, setShowSearchPanel] = useState(true);
   const [toastMessage, setToastMessage] = useState('');
   const [nodeIndex, setNodeIndex] = useState([]);
+  const [copyModalNodeId, setCopyModalNodeId] = useState(null);
+  const [copyExpandedPages, setCopyExpandedPages] = useState(new Set());
+  const [copyExpandedNodes, setCopyExpandedNodes] = useState(new Set());
   const fileInputRef = useRef(null);
   const tabBarRef = useRef(null);
   const tabDragState = useRef({ isDown: false, startX: 0, scrollLeft: 0, moved: false });
@@ -652,6 +705,34 @@ export default function App() {
   const showToast = (msg) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(''), 1800);
+  };
+
+  const toggleCopyPage = (pageId) => {
+    setCopyExpandedPages(prev => {
+      const next = new Set(prev);
+      if (next.has(pageId)) next.delete(pageId);
+      else next.add(pageId);
+      return next;
+    });
+  };
+
+  const toggleCopyNode = (nodeId) => {
+    setCopyExpandedNodes(prev => {
+      const next = new Set(prev);
+      if (next.has(nodeId)) next.delete(nodeId);
+      else next.add(nodeId);
+      return next;
+    });
+  };
+
+  const openCopyModal = (nodeId) => {
+    setCopyModalNodeId(nodeId);
+    setCopyExpandedPages(new Set());
+    setCopyExpandedNodes(new Set());
+  };
+
+  const closeCopyModal = () => {
+    setCopyModalNodeId(null);
   };
 
   const activePageIndex = pages.findIndex(p => p.id === activePageId);
@@ -976,6 +1057,11 @@ export default function App() {
     setActivePageId(newPage.id);
   };
 
+  const createPageAndCopyNode = (nodeId) => {
+    duplicatePage(null, { createOnly: true, sourceNodeId: nodeId });
+    closeCopyModal();
+  };
+
   const copyNodeToPage = (nodeId, pageId) => {
     const sourceNode = findNode(activeTreeData, nodeId);
     const targetPage = pages.find(page => page.id === pageId);
@@ -987,6 +1073,7 @@ export default function App() {
     ));
     setPages(updatedPages);
     setStatusMsg('已複製區塊');
+    closeCopyModal();
   };
 
   const addNewPage = () => {
@@ -1261,9 +1348,7 @@ export default function App() {
                   onSelectJumpTarget={handleSelectJumpTarget}
                   onJumpToNode={handleJumpToNode}
                   activePageId={activePageId}
-                  pages={pages}
-                  onCopyNode={copyNodeToPage}
-                  onDuplicatePage={duplicatePage}
+                  onOpenCopyModal={openCopyModal}
                 />
               )}
               <div className="pl-12 relative mt-4 opacity-50"><div className="absolute top-0 left-[-24px] h-8 w-px bg-slate-300 transform -translate-x-1/2" /><div className="ml-4 p-3 border-2 border-dashed border-slate-300 rounded-lg text-slate-400 text-xs text-center">END OF FLOW</div></div>
@@ -1271,8 +1356,20 @@ export default function App() {
         </div>
       {selectedId && <InspectorPanel selectedNode={selectedNode} onUpdate={handleUpdateNode} onClose={() => setSelectedId(null)} isEditable={isEditable} />}
     </main>
-    <ShareModal isOpen={showShareModal} onClose={() => setShowShareModal(false)} cloudId={cloudId} onGenerateLink={handleCloudSave} />
-    {toastMessage && (
+      <ShareModal isOpen={showShareModal} onClose={() => setShowShareModal(false)} cloudId={cloudId} onGenerateLink={handleCloudSave} />
+      <CopyNodeModal
+        isOpen={copyModalNodeId !== null}
+        onClose={closeCopyModal}
+        pages={pages}
+        copyExpandedPages={copyExpandedPages}
+        copyExpandedNodes={copyExpandedNodes}
+        onTogglePage={toggleCopyPage}
+        onToggleNode={toggleCopyNode}
+        onCopyToPage={copyNodeToPage}
+        onCreatePageWithCopy={createPageAndCopyNode}
+        sourceNodeId={copyModalNodeId}
+      />
+      {toastMessage && (
       <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white text-sm px-4 py-2 rounded-lg shadow-lg animate-fadeIn">
         {toastMessage}
       </div>
